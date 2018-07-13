@@ -1,0 +1,434 @@
+---
+title: "First Homework Report"
+author: "Parand Alizadeh"
+date: "`r Sys.time()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+---
+
+<div align="center">
+<img  src="images/Rman.jpeg"  align = 'center'>
+</div>
+
+
+<h1 dir="RTL"> 
+تمرین سری اول: چند مساله
+</h1>
+
+<p dir="RTL"> 
+به سوال های زیر را از طریق نوشتن یک کد پاسخ دهید.
+</p>
+
+
+***
+
+<h2 dir="RTL">
+ماتریس دوستانه
+</h2>
+
+<p dir="RTL">
+یک ماتریس
+$(n,n)$
+که شامل اعداد 
+$1,2,...,n^2$
+است. دوستانه نامیده میشود اگر مجموع سطرها با مجموع ستون های آن برابر شوند. مثال هایی از ماتریس های دوستانه از بعد ۴و۵و۶ ارایه دهید. 
+</p>
+
+
+<p dir="RTL"> 
+پاسخ سوال:
+</p>
+
+```{r q1}
+
+library(magic)
+
+magic(4)
+magic(5)
+magic(6)
+
+
+```
+
+***
+
+<h2 dir="RTL">
+جایشگت  عجیب
+</h2>
+
+<p dir="RTL">
+جایگشت هایی از اعداد ۱ تا ۱۳ را پیدا کنید که در شرایط زیر صدق کنند:
+</p>
+
+$$ a = (a_1, a_2,..., a_{13})$$
+$$\frac{a_1}{a_2+a_3} = \frac{a_2+a_3}{a_3+a_4+a_5}<1$$
+$$\frac{a_6}{a_6+a_7}= \frac{a_6+a_7}{a_7+a_8+a_9} = \frac{a_7+a_8+a_9}{a_5+a_9+a_{10}} <1$$
+
+$$\frac{a_{11}+a_{12}}{a_{12}+a_{13}}=\frac{a_{12}+a_{13}}{a_{13}+a_{10}}<1$$
+<p dir="RTL"> 
+پاسخ سوال:
+</p>
+
+```{r q2}
+library(gtools)
+
+x5 = permutations(13,5)
+ans1 = list()
+for (i in 1:nrow(x5)){
+  a = x5[i, ]
+  
+  
+  p1 = a[1] / (a[2] + a[3]);
+  p2 = (a[2] + a[3]) / (a[3] + a[4] + a[5]);
+  if(p1 >= 1 || p1 != p2)
+    next
+  
+  s = length(ans1)
+  ans1[[s+1]] = a
+  
+}
+
+
+
+x6 = permutations(13,6)
+ans2 = list()
+for(i in 1:nrow(x6)){
+  a = x6[i, ]
+  i5 = 1
+  i6 = 2
+  i7 = 3
+  i8 = 4
+  i9 = 5
+  i10 = 6
+  
+  p3 = (a[i6]) / (a[i6] + a[i7]);
+  p4 = (a[i6] + a[i7]) / (a[i7] + a[i8] + a[i9]);
+  
+  if(p3 >= 1 || p3 != p4)
+    next()
+  
+  p5 = (a[i7] + a[i8] + a[i9]) / (a[i5] + a[i9] + a[i10]);
+  if(p3 != p5)
+    next
+  
+
+  s = length(ans2)
+  ans2[[s+1]] = a
+}
+
+
+
+
+x4 = permutations(13,4)
+ans3 = list()
+for(i in 1:nrow(x4)){
+  a = x4[i,]
+  
+  i10 = 1
+  i11 = 2
+  i12 = 3
+  i13 = 4
+  
+  p6 = (a[i11] + a[i12]) / (a[i12] + a[i13]);
+  p7 = (a[i12] + a[i13]) / (a[i13] + a[i10]);
+  
+  if(p6 >= 1 || p6 != p7)
+    next
+  
+  s = length(ans3)
+  ans3[[s+1]] = a
+}
+
+
+
+
+
+res = 13:1
+for (i in ans1){
+  for(j in ans2){
+    for (k in ans3){
+
+      if(i[5] != j[1] | j[6] != k[1])
+        next
+      jj = j[2:6]
+      kk = k[2:4]
+      tmp = c(i, jj, kk)
+      found = TRUE
+      for (t0 in 1:13){
+        for(t1 in 1:13){
+          if(t0 == t1)
+            next
+          if(tmp[t0] == tmp[t1])
+            found = FALSE
+          if(!found)
+            break
+          
+        }
+        if(!found)
+          break
+      }
+      if(found)
+        res = tmp
+
+    }
+
+  }
+
+}
+
+
+
+print(res)
+
+```
+
+***
+
+<h2 dir="RTL">
+مچ گیری
+</h2>
+
+<p dir="RTL">
+میزگردی شامل ۱۶ فرد دروغگو و راستگو تشکیل شده است. هر کسی ادعا میکند دو فرد کنار دستی او دروغگو هستند. چند نفر دروغگو در جمع وجود دارد؟
+</p>
+<p dir="RTL"> 
+پاسخ سوال:
+</p>
+
+```{r q31}
+n = 16L
+
+a = integer(n)
+
+#1 liar 
+#2 truthful
+
+for (k in 0:3){
+  a[1] = as.integer(k %% 2) + 1
+  a[2] = as.integer(k / 2) + 1
+  
+  found = TRUE
+  
+  for (i in 2:16){
+
+    if(a[i - 1] == 1L & a[i] != 2L){
+      found = FALSE
+      break
+    }
+    if(a[i - 1] == 2L & a[i] != 1L){
+      found = FALSE
+      break
+    }
+    a[i + 1] = a[i - 1]
+    
+  }
+  if(a[1] != a[n-1])
+    found = FALSE
+  if (found)
+    break
+}
+
+ans = 0
+for (i in a){
+  if(i == 1)
+    ans = ans + 1
+}
+
+print(ans)
+
+```
+
+<p dir="RTL">
+میزگرد دیگری شامل ۱۲ نفر فرد راستگو و دروغگو تشکیل شده به طوری که هر فرد ادعا میکند از میان دو نفر کنار دستی یک نفر راستگو و یک نفر دروغگو هستند. چند نفر دروغگو در جمع وجود دارد؟
+</p>
+<p dir="RTL"> 
+پاسخ سوال:
+</p>
+```{r q32}
+n = 12L
+
+a = integer(n)
+
+#1 liar 
+#2 truthful
+
+found = FALSE
+for (k in 0:3){
+  a[1] = as.integer(k %% 2) + 1
+  a[2] = as.integer(k / 2) + 1
+  
+
+  
+  for (i in 2:(n-1)){
+    if(a[i] == 2)
+      a[i + 1] = 3 - a[i - 1]
+    else
+      a[i + 1] = a[i-1]
+  }
+  
+  if(a[n] == 2){
+    if(a[1] != a[n-1])
+      found = TRUE
+  }
+  else{
+    if(a[1] == a[n-1])
+      found = TRUE
+  }
+}
+
+#print(found)
+ans = 0
+for (i in a){
+  if(i == 1)
+    ans = ans + 1
+
+}
+
+print(ans)
+```
+<p dir="RTL">
+این دفعه میزگردی هشت نفره تشکیل شده به گونه ایی که چهار نفر ادعا میکنند از از میان دو نفر کنار دستی یکی دروغگو و دیگری راستگوست و چهار نفر دیگر اعلام میکنند که هر دو فرد کنار دستی آنها دروغگو هستند. چند نفر دروغگو در میان جمع است؟
+</p>
+
+<p dir="RTL"> 
+پاسخ سوال:
+</p>
+```{r q33}
+n = 8L
+
+a = integer(n)
+
+#1 liar 
+#2 truthful
+
+found = TRUE
+for (i0 in 1:n){
+  for (i1 in 1:n){
+    if(i0 == i1)
+      next
+    for(i2 in 1:n){
+      if(i2 == i1 || i2 == i0)
+        next
+      for(i3 in 1:n){
+        if(i3 == i2 || i3 == i1 || i3 == i0)
+          next
+        for(k in 0:15){
+          
+          
+          a[1] = as.integer(k %% 2) + 1
+          a[2] = (as.integer(k / 2) %%2) + 1
+          a[3] = (as.integer(k / 4) %%2) + 1
+          a[4] = (as.integer(k / 8) %%2) + 1
+          a[5] = (as.integer(k / 16) %%2) + 1
+          a[6] = (as.integer(k / 32) %%2) + 1
+          a[7] = (as.integer(k / 64) %%2) + 1
+          a[8] = (as.integer(k / 128) %%2) + 1
+          
+          found = TRUE
+          
+         
+          for (q in 2:7){
+            
+            
+            if(q == i0 || q == i1 || q == i2 || q == i3){
+              if(a[q] == 1){
+                if(a[q-1] == 1 && a[q+1] == 1)
+                  found = FALSE
+              }
+              else{
+                if(a[q-1] != 1 || a[q+1] != 1)
+                  found = FALSE
+              }
+            }
+            else{
+              if(a[q] == 2){
+                if(a[q-1] == a[q + 1])
+                  found = FALSE
+              }
+              else{
+                if(a[q-1] != a[q+1])
+                  found = FALSE
+              }
+            }
+          }
+          
+          if(i0 == 1 || i1 == 1 || i2 == 1 || i3 == 1){
+            if(a[1] == 1){
+              if(a[n] == 1 && a[2] == 1)
+                found = FALSE
+            }
+            else{
+              if(a[n] != 1 || a[2] != 1)
+                found = FALSE
+            }
+          }
+          else{
+            if(a[1] == 2){
+              if(a[n] == a[2])
+                found = FALSE
+            }
+            else{
+              if(a[n] != a[2])
+                found = FALSE
+            }
+          }
+          
+          
+          
+          if(n == i0 || n == i1 || n == i2 || n == i3){
+            if(a[n] == 1){
+              if(a[n-1] == 1 && a[1] == 1)
+                found = FALSE
+            }
+            else{
+              if(a[n-1] != 1 || a[1] != 1)
+                found = FALSE
+            }
+          }
+          else{
+            if(a[n] == 2){
+              if(a[n-1] == a[1])
+                found = FALSE
+            }
+            else{
+              if(a[n-1] != a[1])
+                found = FALSE
+            }
+          }
+          
+          if(found){
+            print("saying that their sides are both liar:")
+            cat(i0, i1, i2, i3 , "\n")
+            break
+          }
+        }
+        if(found)
+          break
+        
+      }
+      if(found)
+        break
+    }
+    if(found)
+      break
+  }
+  if(found)
+    break
+}
+
+ans = 0
+for (i in a){
+  if(i == 1){
+    ans = ans + 1
+    print("liar")
+  }
+  else
+    print("truthful")
+}
+
+print(ans)
+
+
+```

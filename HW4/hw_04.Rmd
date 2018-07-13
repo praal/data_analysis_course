@@ -1,0 +1,496 @@
+---
+title: "Fourth Week: Hypothesis Testing"
+subtitle: "TIMSS Analysis"
+author: "Parand Alizadeh"
+date: "`r Sys.time()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+---
+
+<div align="center">
+<img  src="images/math.jpg"  align = 'center'>
+</div>
+
+<h1 dir="RTL"> 
+تمرین سری چهارم: چقدر ریاضی بلدیم و چرا؟
+</h1>
+
+<p dir="RTL"> لطفا مقاله زیر را مطالعه بفرمایید. </p>
+<p dir="RTL">
+[چرایی رتبه ضعیف ایران در آزمون تیمز](https://goo.gl/gX8DZc)
+</p>
+
+> <p dir="RTL"> 
+با استفاده از داده های ارزیابی تیمز ۲۰۱۵ ادعاهای زیر را مورد ارزیابی قراردهید.
+برای هر سوال علاوه بر استدلال آماری که در غالب آزمون فرض تعریف می شود از تصویرسازی مناسب باهر دو ابزار
+ggplot2
+و
+highcharter
+استفاده نمایید.
+به دلخواه به هفت گزاره از موارد زیر پاسخ دهید.
+</p>
+
+***
+
+<p dir="RTL">
+۱. میران رضایت معلمان در پیشرفت تحصیلی دانش آموزان موثر است.
+</p>
+
+<p dir="RTL">
+با استفاده از سوال btdgtjs که میزان رضایت معلمان را نشان میدهد، مدارس با توجه به میانگین معلمها به سه دسته از نظر رضایت مندی تقسیم میشوند و میزان نمره دانش آموزان آن حساب میشود. با توجه به تست آنوا میانگین این سه دسته مساوی نیست بنابراین این فاکتور در میزان موفقیت دانش آموزان در آزمون ریاضی تاثیر دارد. 
+در نهایت بین دو دسته مینیمم و ماکسیمم تست فرض انجام شد و آن جا هم فرض مساوی بودن میانگین ها رد شد.
+</p>
+
+```{r q1, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(highcharter)
+
+btm= read_rds("~/Downloads/btm.rds") 
+
+btm %>% select(idcntry, idschool, btbg10a, btbg10b, btbg10c, btbg10d, btbg10e, btbg10f, btbg10g, btbg11a, btbg11b, btbg11c, btbg11d, btbg11e, btbg11f, btbg11g, btbg11h, btdgtjs) -> teachers
+
+teachers$id = paste(teachers$idcntry, teachers$idschool)
+
+bsg= read_rds("~/Downloads/bsg.rds") 
+
+bsg %>% select(idcntry, idschool,bsmmat01, bsmmat02, bsmmat03, bsmmat04, bsmmat05) -> scores
+
+scores %>% mutate(score = round((bsmmat01 + bsmmat02 + bsmmat03 + bsmmat04 + bsmmat05) / 5, 0)) -> scores
+scores$id = paste(scores$idcntry, scores$idschool)
+
+#teachers %>% mutate(satis1 = 28 - (btbg10a + btbg10b + btbg10c + btbg10d + btbg10e + btbg10f + btbg10g)) -> teachers
+#teachers %>% mutate(satis2 = (btbg11a + btbg11b + btbg11c + btbg11d + btbg11e + btbg11f + btbg11g + btbg11h)) -> teachers
+#teachers %>% mutate(happiness = satis1 + satis2) -> teachers
+teachers %>% mutate(satis = btdgtjs) -> teachers
+teachers %>% select(id, satis) -> teachers
+
+teachers %>% group_by(id) %>% summarise( happiness = round(mean(satis), 0)) -> teachers
+scores %>% select(id, score) -> scores
+
+both = full_join(teachers, scores)
+both = na.omit(both)
+
+ggplot(data = both) + geom_density( aes(x = as.numeric(score), fill = as.character(happiness)), alpha = 0.3)
+
+aov(score ~ happiness , data = both) -> fit
+summary(fit)
+
+both %>% filter(happiness == 1 | happiness == 3) -> hyp
+t.test(score ~ happiness, data = hyp) 
+
+both %>% filter(happiness == 1) -> yek
+both %>% filter(happiness == 2) -> dow
+both %>% filter(happiness == 3) -> se
+
+hchart(density(yek$score), type = "area", name = "low satsification") %>% hc_add_series(density(dow$score), type = "area", name = "medium satsification") %>% hc_add_series(density(se$score), type = "area", name = "high satsification")
+
+```
+
+***
+
+<p dir="RTL">
+۲. والدینی که تحصیلات بیشتری دارند دارای فرزندان موفق تری می باشند.
+</p>
+
+<p dir="RTL">
+با توجه به سوال میزان تحصیلات پدر و مادر در پرسشنامه دانش آموزان، جامعه برحسب مجموع تحصیلات پدر و مادر به ۴ دسته تقسیم شد. طبق تست آنوا برابر بودن میانگین این ۴ دسته رد شد.
+در نهایت این ۴ دسته به دو دسته بزرگتر تبدیل شدند و تست فرض برابر بودن میانگین این دو دسته را با فرض جایگزین خانواده های با تحصیلات بیشتر فرزندان موفق تری دارند رد میکند.
+</p>
+
+
+```{r q2, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(highcharter)
+
+bsg= read_rds("~/Downloads/bsg.rds") 
+
+bsg %>% select(bsmmat01, bsmmat02, bsmmat03, bsmmat04, bsmmat05, bsbg07a, bsbg07b) -> scores
+
+scores %>% mutate(nomre = round((bsmmat01 + bsmmat02 + bsmmat03 + bsmmat04 + bsmmat05) / 5, 0)) -> scores
+
+scores %>% filter(bsbg07a != 8 & bsbg07b != 8) -> scores
+
+scores %>% mutate(edu = round((bsbg07a + bsbg07b)/5, 0)) -> fives
+
+
+
+fives %>% select(nomre, edu) -> p
+p = na.omit(p)
+p %>% mutate(education = as.character(edu)) -> p
+ggplot(data = p) + geom_density( aes(x = as.numeric(nomre), fill = education), alpha = 0.3)
+
+aov(nomre ~ edu , data = p) -> fit
+summary(fit)
+
+scores %>% mutate(edu = round((bsbg07a + bsbg07b)/10, 0)) -> two
+two %>% filter(edu == 0) -> yek
+two %>% filter(edu == 1) -> dow
+hchart(density(yek$nomre), type = "area", name = "low educated") %>% hc_add_series(density(dow$nomre), type = "area", name = "high educated") 
+
+
+t.test(dow$nomre, yek$nomre, alt = "greater")
+```
+
+***
+
+<p dir="RTL">
+۳. امکانات رفاهی در خانه موجب پیشرفت تحصیلی می گردد.
+</p>
+
+<p dir="RTL">
+ابتدا با سوالاتی که درباره امکانات در منزل در پرسشنامه دانش آموز بود امتیازی برای امکانات در نظر گرفته شد. با تست آنوا برابر بودن میانگین این دسته ها رد شد.
+در نهایت این ۱۲ دسته به ۲ دسته کلی تقسیم شد و طبق تست فرض، برابر بودن میانگین آنها با فرض یک بیشتر بودن میانگین نمرات امکانات بیشتر رد شد.
+</p>
+
+```{r q3, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(highcharter)
+
+bsg= read_rds("~/Downloads/bsg.rds") 
+
+bsg %>% select(idcntry, idschool, idclass, idstud, bsmmat01, bsmmat02, bsmmat03, bsmmat04, bsmmat05, bsbg06a, bsbg06b, bsbg06c, bsbg06d, bsbg06e, bsbg06f, bsbg06g, bsbg06h, bsbg06i, bsbg06j, bsbg06k) -> scores
+
+scores %>% mutate(nomre = round((bsmmat01 + bsmmat02 + bsmmat03 + bsmmat04 + bsmmat05) / 5, 0)) -> scores
+
+scores %>% mutate(facilities= 22 - (bsbg06a + bsbg06b + bsbg06c + bsbg06d + bsbg06e + bsbg06f + bsbg06g + bsbg06h + bsbg06i + bsbg06j + bsbg06k)) -> ziad
+
+
+ziad %>% select(nomre, facilities) -> p
+p = na.omit(p)
+
+ggplot(data = p) + geom_density( aes(x = as.numeric(nomre), fill = as.character(facilities)), alpha = 0.3)
+
+aov(nomre ~ facilities , data = p) -> fit
+summary(fit)
+
+p%>% mutate(totalFacilities = round(facilities / 8,0)) -> hyp
+
+
+hyp %>% filter(totalFacilities == 0) -> yek
+hyp %>% filter(totalFacilities == 1) -> dow
+t.test(yek$nomre, dow$nomre, alt = "less")
+hchart(density(yek$nomre), type = "area", name = "low facilities") %>% hc_add_series(density(dow$nomre), type = "area", name = "high facilities")
+
+```
+
+***
+
+<p dir="RTL">
+۴. محیط آرام مدرسه نقش مهمی در پیشرفت تحصیلی دارد.
+</p>
+
+***
+
+<p dir="RTL">
+۵. معلمان با تحصیلات  بالاتر یا تجربه بیشتر دانش آموزان موفق تری تربیت می کنند.
+</p>
+
+<p dir="RTL">
+ابتدا با توجه به سوال های میزان تحصیلات و تجربه برای معلمان، امتیازی بر اساس این دو معیار برایشان حساب شد. سپس در مدارس میانگین امتیاز معلمان حساب شد و جامعه بر این اساس به چند دسته تقسیم شد. طبق تست آنوا میانگین این دسته ها برابر نیست. در نهایت این دسته ها را به دو دسته کلی تقسیم کردیم و طبق تست فرض، فرض جایگزین بیشتر بودن نمره های دسته با معلمان باتجربه و تحصیل کرده فرض ۰ را رد کرد.
+</p>
+
+```{r q5, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(highcharter)
+
+btm= read_rds("~/Downloads/btm.rds") 
+
+btm %>% select(idcntry, idschool, btbg01, btbg04) -> teachers
+
+teachers$id = paste(teachers$idcntry, teachers$idschool)
+
+bsg= read_rds("~/Downloads/bsg.rds") 
+
+bsg %>% select(idcntry, idschool,bsmmat01, bsmmat02, bsmmat03, bsmmat04, bsmmat05) -> scores
+
+scores %>% mutate(score = round((bsmmat01 + bsmmat02 + bsmmat03 + bsmmat04 + bsmmat05) / 5, 0)) -> scores
+scores$id = paste(scores$idcntry, scores$idschool)
+
+teachers %>% mutate(eduexpr = btbg01 + 3 * btbg04) -> teachers
+teachers %>% select(id, eduexpr) -> teachers
+teachers %>% group_by(id) %>% summarise(toteduexpr = mean(eduexpr)) -> teachers
+
+scores %>% select(id, score) -> scores
+
+both = full_join(teachers, scores)
+both = na.omit(both)
+both %>% mutate(educAndExpr = round(toteduexpr/20, 0)) -> both
+
+ggplot(data = both) + geom_density( aes(x = as.numeric(score), fill = as.character(educAndExpr)), alpha = 0.3)
+
+aov(score ~ educAndExpr , data = both) -> fit
+summary(fit)
+
+both %>% mutate(eduAndExpr = round(toteduexpr/ 50, 0)) -> both
+
+both %>% filter(eduAndExpr == 0) -> yek
+both %>% filter(eduAndExpr == 1) -> dow
+
+t.test(dow$score, yek$score, alt = "greater") 
+
+hchart(density(yek$score), type = "area", name = "low education and experience") %>% hc_add_series(density(dow$score), type = "area", name = "high education and experience")
+
+
+```
+
+***
+
+<p dir="RTL"> 
+۶. پسران در کاربرد هندسه قوی تر هستند.
+</p>
+
+<p dir="RTL"> 
+با توجه به توزیع تعداد درستی دختران و پسران در سوالات کاربرد هندسه همانطور که در نمودار مشخص است، این دو توزیع تقریبا یکسان هستند.
+در تست فرض نیز چون مقدار p-value زیاد است نمیتوان فرض ۰ که برابر بودن میانگین است را رد کرد.
+</p>
+
+```{r q6, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(highcharter)
+
+timss = read_rds("~/Downloads/timss_2015.rds") 
+timss %>% filter(cognitive_domain == "Applying" & content_domain == "Geometry") -> timss
+
+timss %>% select(question, correct_ratio_per_question_female,correct_ratio_per_question_male) -> d
+d %>% mutate(gender = "male") -> males
+males %>% select(correct = correct_ratio_per_question_male, gender) -> males
+
+d %>% mutate(gender = "female") -> females
+females %>% select(correct = correct_ratio_per_question_female, gender) -> females
+
+alls = rbind(males, females)
+
+ggplot(data = alls) + geom_density( aes(x = as.numeric(correct), fill = as.character(gender)), alpha = 0.3)
+
+t.test(correct ~ gender, data = alls)
+
+hchart(density(females$correct), type = "area", name = "female") %>% hc_add_series(density(males$correct), type = "area", name = "male")
+```
+
+***
+
+<p dir="RTL"> 
+۷. تغذیه دانش آموزان نقش اساسی در یادگیری آنها دارد. 
+</p>
+
+<p dir="RTL"> 
+با در نظر گرفتن صبحانه خوردن دانش آموزان و صبحانه و ناهار در مدرسه (و با اولویت دادن به صبحانه خوردن دانش آموزان) امتیازی برای هرکس محاسبه شد.
+در نهایت طبق این امتیاز جامعه به دو دسته تقسیم شد. طبق تست فرض، فرض بیشتر بودن میانگین کسانی که تغذیه بهتری دارند فرض ۰ را رد کرد.
+</p>
+
+```{r q7, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(highcharter)
+
+bsg= read_rds("~/Downloads/bsg.rds") 
+
+
+
+bsg %>% select(idcntry, idschool,bsmmat01, bsmmat02, bsmmat03, bsmmat04, bsmmat05, bsbg12) -> scores
+
+scores %>% mutate(nomre = round((bsmmat01 + bsmmat02 + bsmmat03 + bsmmat04 + bsmmat05) / 5, 0)) -> scores
+
+
+bcg = read_rds("~/Downloads/bcg.rds")
+bcg %>% select(idcntry, idschool, bcbg06a, bcbg06b) -> school
+school$id = paste(school$idcntry, school$idschool)
+school %>% mutate(food2 = 6 - bcbg06a - bcbg06b) -> school
+school %>% select(id, food2) -> school
+scores$id = paste(scores$idcntry, scores$idschool)
+scores %>% mutate(food1 = 4 - bsbg12) -> scores
+scores %>% select(id , nomre, food1) -> scores
+
+scores %>% group_by(id) %>% summarise(totfood = mean(food1), totScore = mean(nomre)) -> scores
+both = full_join(school, scores)
+both %>% mutate(food = round((food2 + 10 * totfood)/25, 0)) -> both
+both = na.omit(both)
+
+ggplot(data = both) + geom_density( aes(x = as.numeric(totScore), fill = as.character(food)), alpha = 0.3)
+
+both %>% filter(food == 0) -> yek
+both %>% filter(food == 1) -> dow
+t.test(yek$totScore, dow$totScore, alt = "less") 
+
+hchart(density(yek$totScore), type = "area", name = "less food") %>% hc_add_series(density(dow$totScore), type = "area", name = "more food")
+```
+
+***
+
+<p dir="RTL"> 
+۸. مدارس با امکانات بیشتر دارای عملکرد بهتری می باشند.
+</p>
+
+***
+
+<p dir="RTL"> 
+۹. علت افت تحصیلی عدم مشارکت در کلاس است.
+</p>
+
+***
+
+<p dir="RTL"> 
+۱۰. دانش آموزان ایرانی در استدلال قوی تر از کاربرد هستند.
+</p>
+
+<p dir="RTL"> 
+با توجه به نموداری که توزیع دو دسته استدلال و کاربرد را در ایران نشان میدهد متوجه میشویم که کاربرد از استدلال میانگین بیشتری دارد که تست فرض هم با این فرض جایگزین فرض ۰ را رد میکند. 
+</p>
+
+
+```{r q10, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(highcharter)
+
+timss = read_rds("~/Downloads/timss_2015.rds") 
+timss %>% filter(Country == "Iran, Islamic Rep. of") -> timss
+timss %>% filter(cognitive_domain == "Reasoning" | cognitive_domain == "Applying") -> timss
+timss %>% select(cognitive_domain, correct_ratio_per_question) -> d
+
+
+ggplot(data = d) + geom_density( aes(x = as.numeric(correct_ratio_per_question), fill = as.character(cognitive_domain)), alpha = 0.3)
+
+
+d %>% filter(cognitive_domain == "Reasoning") %>%  select(correct_ratio_per_question)-> r
+d %>% filter(cognitive_domain != "Reasoning") %>%  select(correct_ratio_per_question)-> ap
+t.test(x = r, y = ap , data = d, alt = "less")
+
+hchart(density(r$correct_ratio_per_question), type = "area", name = "reasoning") %>% hc_add_series(density(ap$correct_ratio_per_question), type = "area", name = "applying")
+
+```
+
+***
+
+<p dir="RTL">
+سه گزاره جالب کشف کنید و ادعای خود را ثابت نمایید.
+</p>
+
+
+<p dir="RTL">
+دانش آموزانی که فکر میکنند در ریاضی خوب هستند نمرات بهتری در آن کسب میکنند.
+</p>
+
+<p dir="RTL">
+بر اساس سوالاتی که راجع به قوی بودن در ریاضی از دانش آموزان پرسیده شده بود امتیازی برای دانش آموزان محاسبه شد که طبق تست آنوا دسته های متفاوت در این امتیاز میانگین متفاوتی دارند. 
+حال کل جامعه به دو دسته کلی تقسیم میشود. طبق تست فرض، فرض جایگزین دانش آموزان با تصور بهتر میانگین بهتری دارند فرض ۰ را رد میکند.
+</p>
+
+```{r q12, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(highcharter)
+
+bsg= read_rds("~/Downloads/bsg.rds") 
+
+bsg %>% select(bsmmat01, bsmmat02, bsmmat03, bsmmat04, bsmmat05, bsbm19a, bsbm19b, bsbm19c, bsbm19d, bsbm19e, bsbm19f, bsbm19g, bsbm19h, bsbm19i) -> scores
+
+scores %>% mutate(score = round((bsmmat01 + bsmmat02 + bsmmat03 + bsmmat04 + bsmmat05) / 5, 0), strength = round((bsbm19a - bsbm19b - bsbm19c + bsbm19d - bsbm19e + bsbm19f + bsbm19g - bsbm19h - bsbm19i)/10 * (-1), 0)) -> scores
+scores= na.omit(scores)
+ggplot(data = scores) + geom_density( aes(x = as.numeric(score), fill = as.character(strength)), alpha = 0.3)
+
+
+aov(score ~ strength , data = scores) -> fit
+summary(fit)
+
+scores %>% mutate(totalStrength = round((strength-1)/2 ,0)) -> scores
+t.test(score ~ totalStrength, data = scores, alt = "less") 
+
+scores %>% filter(totalStrength == -1) -> yek
+scores %>% filter(totalStrength == 0) -> dow
+
+
+hchart(density(yek$score), type = "area", name = "low strength") %>% hc_add_series(density(dow$score), type = "area", name = "high strength")
+```
+
+***
+
+<p dir="RTL">
+میزان تکالیف در میزان موفقیت دانش آموزان تاثیر دارد.
+</p>
+
+<p dir="RTL"> 
+جامعه بر اساس میزان تکالیف به چند دسته تقسیم شد و طبق تست آنوا میانگین این دسته ها برابر نیست.
+</p>
+```{r q13, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(highcharter)
+
+bsg= read_rds("~/Downloads/bsg.rds") 
+
+bsg %>% select(bsmmat01, bsmmat02, bsmmat03, bsmmat04, bsmmat05, bsbm25ba) -> scores
+
+scores %>% mutate(score = round((bsmmat01 + bsmmat02 + bsmmat03 + bsmmat04 + bsmmat05) / 5, 0),   homework= bsbm25ba) -> scores
+
+scores= na.omit(scores)
+ggplot(data = scores) + geom_density( aes(x = as.numeric(score), fill = as.character(homework)), alpha = 0.3)
+
+
+aov(score ~ homework , data = scores) -> fit
+summary(fit)
+
+```
+
+***
+
+<p dir="RTL">
+معلمانی که در کلاس های آمادگی شرکت میکنند و در مجموع فعالیت بیشتری برای آمادگی خود انجام میدهند دانش آموزان موفق تری دارند.
+</p>
+
+<p dir="RTL">
+طبق سوالات مربوط به کلاس ها، سمینارها و .. امتیازی برای معلمان از نظر آمادگی محاسبه شد و طبق آن جامعه را دو دسته کردیم.
+طبق تست فرض، فرض بیشتر بودن میانگین نمرات معلمان آماده تر فرض ۰ را رد کرد
+</p>
+
+```{r q14, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(highcharter)
+
+btm= read_rds("~/Downloads/btm.rds") 
+
+btm %>% select(idcntry, idschool, btbm24a , btbm24b, btbm24c, btbm24d, btbm24e, btbm24f, btbm24g, btbm25) -> teachers
+
+teachers$id = paste(teachers$idcntry, teachers$idschool)
+
+bsg= read_rds("~/Downloads/bsg.rds") 
+
+bsg %>% select(idcntry, idschool,bsmmat01, bsmmat02, bsmmat03, bsmmat04, bsmmat05) -> scores
+
+scores %>% mutate(score = round((bsmmat01 + bsmmat02 + bsmmat03 + bsmmat04 + bsmmat05) / 5, 0)) -> scores
+scores$id = paste(scores$idcntry, scores$idschool)
+
+teachers %>% mutate(prepare= 14 - (btbm24a +  btbm24b +  btbm24c + btbm24d + btbm24e +  btbm24f+ btbm24g) + 2 * btbm25) -> teachers
+
+teachers %>% select(id, prepare) -> teachers
+
+teachers %>% group_by(id) %>% summarise(preparation = round(mean(prepare/12), 0)) -> teachers
+scores %>% select(id, score) -> scores
+
+alls = full_join(scores, teachers)
+
+alls = na.omit(alls)
+
+ggplot(data = alls) + geom_density( aes(x = as.numeric(score), fill = as.character(preparation)), alpha = 0.3)
+
+t.test(score ~ preparation, data = alls, alt = "less")
+
+```

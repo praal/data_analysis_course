@@ -1,0 +1,512 @@
+---
+title: "Second Homework Report"
+subtitle: "Mobile Data"
+author: "Parand Alizadeh"
+date: "`r Sys.time()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+---
+
+<div align="center">
+<img  src="images/smartphones.jpg"  align = 'center'>
+</div>
+
+<h1 dir="RTL"> 
+تمرین سری دوم: تلفن همراه شناسی!
+</h1>
+
+> <p dir="RTL"> 
+ با استفاده از داده های گوشی های همراه به سوالات زیر پاسخ دهید. 
+برای رسم نمودار از پکیج 
+ggplot2
+استفاده کنید.
+</p>
+
+***
+
+<p dir="RTL">
+۱. کدام شرکت بیشترین تعداد گوشی را تولید کرده است؟
+نمودار ستونی ۲۰ شرکت برتر بر حسب تعداد گوشی تولید کرده را رسم کنید.
+</p>
+
+```{r q1, echo=FALSE, results='hide',message=FALSE}
+library(readr)
+library(ggplot2)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+library(dplyr)
+
+mobile %>%
+  group_by(company) %>%
+  summarise(count = n(), na.rm = TRUE) -> stat
+
+newstat = stat[order(-stat$count), ]
+newstat = head(newstat,20)
+newstat
+p = ggplot(data = newstat, aes(x = reorder(company, count), y = count))
+p = p + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) 
+p + geom_col(color = "purple", fill = "purple", alpha = 0.7) + xlab('company') + ylab('count') + ggtitle("20 Max Companies")
+```
+
+***
+
+<p dir="RTL">
+۲. نمودار زمانی طول عرض  ضخامت و کیفیت دوربین گوشی ها را بکشید
+ و به نمودار هر یک مدل خطی اضافه کنید.
+</p>
+
+<p dir="RTL">
+نمودار زمانی عرض:
+</p>
+```{r q21, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+p = ggplot(data = mobile, aes(x = year, y = dim_breadth)) 
+p = p + geom_point(size = 2, alpha = 0.6, color = "purple") + xlab('Year') + ylab('Mobile Breadth') + ggtitle("Breadth")
+p + geom_smooth(method="lm")
+```
+
+<p dir="RTL">
+نمودار زمانی میانگین عرض:
+</p>
+
+```{r q212, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+mobile %>% 
+  group_by(year) %>% 
+  summarise(avg_breadth = mean(dim_breadth, na.rm = TRUE)) -> m
+p = ggplot(data = m, aes(x = year, y = avg_breadth)) 
+p = p + geom_line(color = "purple") + xlab('Year') + ylab('Mobile Avergae Breadth') + ggtitle("Average Breadth")
+p + geom_smooth(method="lm", se = FALSE)
+```
+
+<p dir="RTL">
+نمودار زمانی طول:
+</p>
+
+```{r q23, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+p = ggplot(data = mobile, aes(x = year, y = dim_length)) 
+p = p + geom_point(size = 2, alpha = 0.6, color = "purple") + xlab('Year') + ylab('Length') + ggtitle("Length")
+p + geom_smooth(method="lm")
+```
+<p dir="RTL">
+نمودار زمانی میانگین طول:
+</p>
+
+```{r q232, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+mobile %>% 
+  group_by(year) %>% 
+  summarise(avg_l= mean(dim_length, na.rm = TRUE)) -> m
+p = ggplot(data = m, aes(x = year, y = avg_l)) 
+p = p + geom_line(color = "purple") + xlab('Year') + ylab('Length') + ggtitle("Length")
+p + geom_smooth(method="lm", se = FALSE)
+
+```
+
+<p dir="RTL">
+نمودار زمانی ضخامت:
+</p>
+```{r q24, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+p = ggplot(data = mobile, aes(x = year, y = dim_thickness)) 
+p = p + geom_point(size = 2, alpha = 0.6, color = "purple") + xlab('Year') + ylab('Thickness') + ggtitle("Thickness")
+p + geom_smooth(method="lm")
+```
+
+<p dir="RTL">
+نمودار زمانی میانگین ضخامت:
+</p>
+
+```{r q242, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+mobile %>% 
+  group_by(year) %>% 
+  summarise(avg_thick= mean(dim_thickness, na.rm = TRUE)) -> m
+p = ggplot(data = m, aes(x = year, y = avg_thick)) 
+p = p + geom_line(color = "purple") + xlab('Year') + ylab('Thickness') + ggtitle("Thickness")
+p + geom_smooth(method="lm", se = FALSE)
+
+```
+
+<p dir="RTL">
+نمودار زمانی دوربین:
+</p>
+
+
+```{r q22, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+p = ggplot(data = mobile, aes(x = year, y = cam_px)) 
+p = p + geom_point(size = 2, alpha = 0.6, color = "purple") + xlab('Year') + ylab('Camera') + ggtitle("Camera")
+p + geom_smooth(method="lm")
+
+```
+
+<p dir="RTL">
+نمودار زمانی میانگین دوربین:
+</p>
+
+```{r q222, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+mobile %>% 
+  group_by(year) %>% 
+  summarise(avg_cam = mean(cam_px, na.rm = TRUE)) -> m
+p = ggplot(data = m, aes(x = year, y = avg_cam)) 
+p = p + geom_line(color = "purple") + xlab('Year') + ylab('Camera') + ggtitle("Camera")
+p + geom_smooth(method="lm", se = FALSE)
+
+```
+
+
+***
+
+<p dir="RTL">
+۳. نمودار ستونی متوسط قیمت گوشی بر حسب تعداد سیم کارت و دسترسی به 
+LTE
+را رسم نمایید.
+</p>
+
+```{r q3, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+library(dplyr)
+
+m0 = mobile[which(mobile$LTE == "Yes"),]
+m1 = mobile[which(mobile$LTE != "Yes"),]
+
+m0 %>% 
+  group_by(sim_no) %>%
+  summarise(avg = mean(price, na.rm = TRUE)) -> fig0
+
+m1 %>% 
+  group_by(sim_no) %>%
+  summarise(avg = mean(price, na.rm = TRUE)) -> fig1
+
+fig0$name <- "LTE"
+fig1$name <- "No LTE"
+d = rbind(fig0, fig1)
+p = ggplot(d, aes(sim_no, avg, fill = name)) + geom_bar(position = "dodge", stat = "identity") + xlab('Number of Simcards') + ylab('Average Price') 
+p
+
+```
+
+***
+
+<p dir="RTL">
+۴. نمودار جعبه ایی ضحامت گوشی هایی که در سال ۲۰۱۷ معرفی شده اند را برحسب اینکه کمیت جک هدفون رسم نمایید
+</p>
+
+```{r q4, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+theme = theme_set(theme_classic())
+
+p = ggplot(data = subset(mobile, !is.na(audio_jack)), aes(x = audio_jack, y = dim_thickness)) + xlab("Audio Jack") + ylab("Thickness")
+p + geom_boxplot()
+```
+
+***
+
+<p dir="RTL">
+۵. مفهوم 
+ppi 
+را در گوشی های موبایل محاسبه و هیستوگرام آن را رسم نمایید.
+همچنین نمودار سالانه متوسط این کمیت را بکشید.
+کدام گوشی بیشترین
+ppi
+را دارد؟
+</p>
+
+
+
+```{r q51, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+mobile$ppi = mobile$px_col * mobile$px_row / mobile$display_size
+
+p = ggplot(data = mobile, aes(x = ppi)) 
+p + geom_histogram(fill = "purple", alpha = 0.7)
+```
+
+<p dir="RTL">
+نمودار سالانه متوسط:
+</p>
+
+```{r q52, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+mobile %>% 
+  group_by(year) %>% 
+  summarise(avg_ppi = mean(ppi, na.rm = TRUE)) -> pp
+
+p = ggplot(data = pp, aes(x = year, y = avg_ppi))
+p + geom_line(color = "purple")
+```
+
+<p dir="RTL">
+گوشی با بیشترین مقدار ppi:
+</p>
+```{r q53, echo=FALSE}
+c = head(arrange(mobile, -ppi),1)
+c$company
+c$device
+c$ppi
+```
+
+***
+
+<p dir="RTL">
+۶. در گذشته به بعضی از مدل های گوشی نوکیا 
+**گوشکوب**
+گفته می شد. سعی کنید برای این مفهوم کمیتی مناسب تعریف کنید .
+ ده گوشکوب برتر را پیدا کرده و نمودار گوشکوبیت آن را رسم نمایید.
+</p>
+
+<p dir="RTL">
+گوشکوب ها موبایل هایی هستند (تبلت ها گوشکوب نیستند) که علاوه بر این که معمولا ابعاد بزرگی دارند (طول و عرض)، بسیار ضخیم هم هستند.
+همچنین این گوشی ها معمولا قدیمی ترند و بسیار امکانات محدودی دارند. (دوربین ندارند یا اگر دارند با کیفیت پایین دارند قابلیت اتصال به اینترنت ندارند، درگاه مموری کارت ندارند، رادیو و هندزفری ندارند، جی پی اس ندارند و معمولا از یک سیم کارت بیشتر پشتیبانی نمیکنند.)
+در این سوال معیارهای بالا محاسبه شد و تبلت ها با محدودیت وزن و ابعاد از آن حذف شدند و در نهایت با ضریب دهی این معیارها امتیازی برای گوشکوبیت محاسبه شد.
+نمودار ۲۰ گوشکوب برتر و امتیاز آنها:
+</p>
+
+```{r q6, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+                  
+                  
+
+mobile = arrange(mobile, year)                                  
+
+mobile %>% 
+  summarise(l = mean(dim_length, na.rm = TRUE), b = mean(dim_breadth, na.rm = TRUE), thick = mean(dim_thickness, na.rm = TRUE), w = mean(weight, na.rm = TRUE)) ->t
+
+mobile %>% 
+  mutate(NumberOfNo = (LTE == "No") + (radio == "No") + (radio == "No") + (gps == "No") +( wlan == "No") + (audio_jack == "No") + (card_slot == "No")) -> m
+
+m %>% 
+  filter(dim_length < 200 & dim_breadth < 100 & weight < 500) -> m
+
+m %>% 
+  mutate(camStat = (is.na(cam_px) || (!is.na(cam_px) && cam_px < 5)), vidStat = (is.na(video) || (!is.na(video) && video == "No"))) -> m
+
+m %>% 
+  mutate(pxcolStat = ifelse(is.na(px_col), 0, px_col), pxrowStat = ifelse(is.na(px_row), 0, px_row) ) -> m
+
+
+m %>% 
+  mutate(score = NumberOfNo - sim_no + (weight - t$w) + (dim_length - t$l) + (dim_breadth - t$b) + 2 * (dim_thickness - t$thick) + 5 * (2017 - year) + 4 * (camStat + vidStat) - pxcolStat - pxrowStat) -> m
+
+
+m = arrange(m , -score)
+
+ans = head(m , 20)
+
+library(tidyr)
+t = unite(ans, name, company, device)
+p = ggplot(data = t, aes(x = reorder(name,score) , y = score))
+p = p + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) 
+p + geom_col(color = "purple", fill = "purple", alpha = 0.7) + xlab("Mobile") + ylab("Gushkubiat")
+```
+
+<p dir="RTL">
+تصویر گوشکوب ترین گوشی طبق این امتیازها:
+</p>
+
+
+<div align="center">
+<img  src="images/gushkub.png"  align = 'center'>
+</div>
+***
+
+<p dir="RTL">
+۷. آیا تلفن همراهی وجود دارد که در آب غرق نشود؟
+اگر جواب بله هست تمام گوشی های که این خاصیت را دارند بیابید.
+با کشیدن یک نمودار به این سوال پاسخ دهید.
+</p>
+
+<p dir="RTL">
+نمودار چگالی گوشی هایی که در آب غرق نمیشوند:
+</p>
+
+```{r q7, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+
+mobile$v = mobile$dim_breadth * mobile$dim_length * mobile$dim_thickness / 1000
+mobile$density = (mobile$weight) / mobile$v
+
+
+mobile %>%
+  filter(density <= 1) -> allW
+
+ggplot(data = allW,aes(density)) + geom_histogram(fill = "purple", alpha= 0.7) 
+```
+
+***
+
+<p dir="RTL">
+۸. نمودار پراکنش حجم ذخیره سازی باطری و وزن را رسم نمایید.
+میزان همبستگی بین این دو کمیت را محاسبه کنید.
+</p>
+
+```{r q8, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+p = ggplot(data = mobile, aes(x = battery_mah, y = weight)) + xlab("Battery") + ylab("Weight")
+p + geom_point(color = "purple")
+```
+
+<p dir="RTL">
+میزان همبستگی:
+</p>
+```{r q81, echo=FALSE}
+c = data_frame(mobile$battery_mah, mobile$weight)
+ans = cor(c, use="complete.obs")
+ans = head(ans,1)
+ans[2]
+```
+
+***
+
+<p dir="RTL">
+۹. قیمت پرچمداران یک برند خاص مثلا سامسونگ را بیابید و نمودار قیمت زمان و نام مدل را رسم نمایید.
+</p>
+
+<p dir="RTL">
+نمودار قیمت پرچمداران سامسونگ:
+</p>
+```{r q9, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+m = filter(mobile, company == "Samsung")
+
+m %>% 
+  group_by(year) %>% 
+  slice(which.max(price)) -> m
+
+p = ggplot(m, aes(x= year, y= price))
+p +   geom_point(color="purple") + geom_text(aes(label=as.character(device),hjust=0,vjust=0), size = 2.5)
+                                             
+```
+
+
+***
+
+<p dir="RTL">
+۱۰. سه نمودار جالب رسم کنید و توضیح دهید چرا از نظر شما جالب است؟
+</p>
+
+
+<p dir="RTL">
+نمودار مقایسه میانگین قیمت شرکت های معروف در سال های مختلف.
+از این نظر جالب است که آیا یک شرکت همیشه گران تر از بقیه است یا نوسان هایی وجود دارد و در رقابت باهم شرکت ها قیمتهایشان را چطور تنظیم میکنند.
+</p>
+
+```{r q101, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+mobile %>% filter(company == "Apple" | (company == "Samsung") | (company == "LG") | (company == "Sony") | (company == "Google")) -> mobile
+
+
+mobile %>% group_by(company, year)  %>% 
+  summarise(avg_price = mean(price, na.rm = TRUE)) -> alls
+alls
+
+ggplot(alls) + geom_line(aes(x = year, y = avg_price, colour = company))
+```
+
+
+<p dir="RTL">
+نمودار مقایسه میانگین کیفیت دوربین شرکت های معروف در سال های مختلف.
+آیا شرکتی وجود دارد که تمرکز خود را روی کیفیت دوربین موبایل های خود گذاشته باشد و تفاوت فاحشی در این زمینه با بقیه داشته باشد؟
+</p>
+
+
+```{r q102, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+mobile %>% filter(company == "Apple" | (company == "Samsung") | (company == "LG") | (company == "Sony") | (company == "Google")) -> mobile
+
+
+mobile %>% group_by(company, year)  %>% 
+  summarise(avg_cam = mean(cam_px, na.rm = TRUE)) -> alls
+alls
+
+ggplot(alls) + geom_line(aes(x = year, y = avg_cam, colour = company))
+```
+
+<p dir="RTL">
+میخواهیم محاسبه کنیم کدام موبایل ها زودتر باتریشان تمام میشود. ظرفیت باتری یک پارامتر مهم است اما هرچه موبایل قابلیت های بیشتر و باکیفیت تری داشته باشد، این قابلیت ها شارژ بیشتری مصرف میکنند و باتری زودتر تمام میشود. این دلیلی است که موبایل های جدیدتر با اینکه نسبت به قدیمی تر ها باتری قوی تری دارند ولی شارژشان زودتر تمام میشود.
+در این جا با توجه به معیارهای بالا امتیازی برای هر موبایل محاسبه کردیم و میانگین این امتیاز را برای شرکت های معروف محاسبه کردیم. اپل بالاترین امتیاز را دارد که طبق گزارش ها هم چنین انتظاری داشتیم.
+</p>
+
+
+```{r q103, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+mobile = read_csv("~/Downloads/mobile_data.csv")
+
+mobile %>% filter(company == "Apple" | (company == "Samsung") | (company == "LG") | (company == "Sony") | (company == "Google")) -> mobile
+
+mobile %>% 
+  mutate(NumberOfYes = (LTE == "Yes") + (radio == "Yes") + (radio == "Yes") + (gps == "Yes") +( wlan == "Yes") + (audio_jack == "Yes") + (card_slot == "Yes")) -> m
+
+m %>% 
+  mutate(score = battery_mah/ (NumberOfYes  + cam_px + ram)) ->m
+m %>% group_by(company) %>% 
+   summarise(avg_score = mean(score, na.rm = TRUE)) ->m
+
+ ggplot(m , aes(x = company, y = avg_score)) + geom_col(fill = "purple")
+ 
+```
+
+
+

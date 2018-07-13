@@ -1,0 +1,590 @@
+---
+title: "Tenth Week: Principal Component Analysis and Factor Analysis"
+subtitle: "PCA Stock, image, ..."
+author: "Parand Alizadeh"
+date: "`r Sys.time()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+---
+
+<div align="center">
+<img  src="images/stock.jpg"  align = 'center'>
+</div>
+
+> <p dir="RTL"> 
+با استفاده از داده های OHLCV شرکت های تشکیل دهنده شاخص s&p500 و همچنین داده مربوط به شاخص های اقتصادی به سوالات زیر پاسخ دهید.
+</p>
+
+***
+
+<p dir="RTL">
+۱. چه شرکتی رکورددار کسب بیشترین سود در بازه یکساله، دو ساله و پنج ساله می باشد؟ این سوال را برای بخش های مختلف مورد مطالعه قرار دهید و رکورددار را معرفی کنید. (برای این کار به ستون sector داده constituents مراجعه کنید.) برای هر دو قسمت نمودار سود ده شرکت و یا بخش برتر را رسم نمایید.
+</p>
+
+```{r q91, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+
+files = list.files("~/Downloads/class_data/stock_dfs")
+industry = read_csv("~/Downloads/class_data/constituents.csv")
+n = length(files)
+
+s = files[1]
+name = strsplit(s, "\\.")
+t = paste("~/Downloads/class_data/stock_dfs/" , s, sep = "")
+x = read_csv(t)
+x %>% select(Date, Close, Open) -> x
+a <- x$Date
+x$year = substring(a,1,4)
+
+x$Close = as.integer(x$Close)
+x$Open = as.integer(x$Open)
+x %>% group_by(year) %>% summarise(benefit = sum(Close - Open)) -> x
+x %>% mutate(comp = name[[1]][1]) -> x
+
+tot = x
+
+for (i in 1:n){
+  s = files[i]
+  name = strsplit(s, "\\.")
+  t = paste("~/Downloads/class_data/stock_dfs/" , s, sep = "")
+  x = read_csv(t)
+  x %>% select(Date, Close, Open) -> x
+  a <- x$Date
+  x$year = substring(a,1,4)
+  
+  x$Close = as.integer(x$Close)
+  x$Open = as.integer(x$Open)
+  x %>% group_by(year) %>% summarise(benefit = sum(Close - Open)) -> x
+  x %>% mutate(comp = name[[1]][1]) -> x
+  
+  tot = rbind(tot, x)
+  gc()
+}
+
+tot %>% select(year, benefit, Symbol = comp) -> ans
+ans = full_join(ans, industry)
+ans = na.omit(ans)
+one = ans %>% group_by(Sector) %>% slice(which.max(benefit)) 
+
+oneall = ans %>% arrange(-benefit) %>% head(10)
+ggplot(one , aes(x = paste( Sector, "-", Name, year), y = benefit)) +  geom_col(fill = "purple", alpha = 0.8) + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) + xlab("Companies") + ggtitle("Benefits in one year in different Sectors")
+ggplot(oneall , aes(x = paste( Sector, "-", Name, year), y = benefit)) +  geom_col(fill = "purple", alpha = 0.8) + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) + xlab("Companies") + ggtitle("10 companies with largest benefit in one year")
+
+
+ans2 = ans
+ans2 = arrange(ans2, Symbol, year)
+
+for (i in 1:(nrow(ans2) - 1)){
+  v = ans2[i,]
+  c = ans2[i + 1, ]
+  ans2[i,2] = -1000
+  if(as.integer(c$year) == as.integer(v$year) + 1){
+    ans2[i,2] = c$benefit + v$benefit
+  }
+
+}
+two = ans2 %>% group_by(Sector) %>% slice(which.max(benefit)) 
+
+twoall = ans2 %>% arrange(-benefit) %>% head(10)
+ggplot(two , aes(x = paste( Sector, "-", Name, year), y = benefit)) +  geom_col(fill = "purple", alpha = 0.8) + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) + xlab("Companies") + ggtitle("Benefits in two years in different Sectors")
+ggplot(twoall , aes(x = paste( Sector, "-", Name, year), y = benefit)) +  geom_col(fill = "purple", alpha = 0.8) + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) + xlab("Companies") + ggtitle("10 companies with largest benefit in two years")
+
+
+ans3 = ans
+ans3 = arrange(ans3, Symbol, year)
+
+for (i in 1:(nrow(ans3) - 5)){
+  v = ans3[i,]
+  c1 = ans3[i + 1, ]
+  c2 = ans3[i + 2, ]
+  c3 = ans3[i + 3, ]
+  c4 = ans3[i + 4, ]
+  c5 = ans3[i + 5, ]
+
+  ans3[i,2] = -1000
+  yy= as.integer(c5$year)
+  yyy = as.integer(v$year)
+  yyy = yyy + 5
+  if(yy == yyy){
+
+    if(c5$Symbol == v$Symbol)
+      ans3[i,2] = c1$benefit + c2$benefit + c3$benefit + c4$benefit + c5$benefit + v$benefit
+  }
+  
+}
+five = ans3 %>% group_by(Sector) %>% slice(which.max(benefit)) 
+
+fiveall = ans3 %>% arrange(-benefit) %>% head(10)
+ggplot(five , aes(x = paste( Sector, "-", Name, year), y = benefit)) +  geom_col(fill = "purple", alpha = 0.8) + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) + xlab("Companies") + ggtitle("Benefits in 5 years in different Sectors")
+ggplot(fiveall , aes(x = paste( Sector, "-", Name, year), y = benefit)) +  geom_col(fill = "purple", alpha = 0.8) + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) + xlab("Companies") + ggtitle("10 companies with largest benefit in 5 years")
+
+```
+
+***
+
+<p dir="RTL">
+۲. یک اعتقاد خرافی می گوید خرید سهام در روز سیزدهم ماه زیان آور است. این گزاره را مورد ارزیابی قرار دهید.
+</p>
+
+
+<p dir="RTL">
+میانگین سود و زیان ۱۳ ام های هر ماه با بقیه روزها از نظر آماری تفاوتش بارز نیست و نمودار هایشان هم بسیار نزدیک است. 
+
+</p>
+```{r q92,message=FALSE,echo=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+
+files = list.files("~/Downloads/class_data/stock_dfs")
+
+
+n = length(files)
+
+s = files[2]
+name = strsplit(s, "\\.")
+t = paste("~/Downloads/class_data/stock_dfs/" , s, sep = "")
+x = read_csv(t)
+x %>% select(Date, Close) -> x
+a <- x$Date
+x$day = substring(a,9,10)
+
+x$Close = as.integer(x$Close)
+x %>% group_by(day) %>% summarise(benefit = mean(Close)) -> x
+siz = x %>% filter(day == 13)
+oth = x %>% filter(day != 13)
+siz = mean(siz$benefit)
+oth = mean(oth$benefit)
+num = c(siz, oth)
+ruz = c(13, 0)
+t = data.frame("day" = ruz, "benefit" = num)
+
+tot = t
+
+for (i in 1:n){
+  s = files[i]
+  name = strsplit(s, "\\.")
+  t = paste("~/Downloads/class_data/stock_dfs/" , s, sep = "")
+  x = read_csv(t)
+  x %>% select(Date, Close) -> x
+  a <- x$Date
+  x$day = substring(a,9,10)
+  
+  x$Close = as.integer(x$Close)
+  x %>% group_by(day) %>% summarise(benefit = mean(Close)) -> x
+  siz = x %>% filter(day == 13)
+  oth = x %>% filter(day != 13)
+  siz = mean(siz$benefit)
+  oth = mean(oth$benefit)
+  num = c(siz, oth)
+  num
+  ruz = c(13, 0)
+  t = data.frame("day" = ruz, "benefit" = num)
+  
+  tot = rbind(tot, t)
+  gc()
+}
+
+
+kruskal.test(benefit ~ day, data = tot)
+w = tot %>% filter(benefit < 200)
+w1 = w %>% filter(day == 13)
+w2 = w %>% filter(day != 13)
+
+ggplot(data = w1, aes(x = benefit, color = "red")) + geom_histogram(binwidth = 1)
+ggplot(data = w1, aes(x = benefit, color = "red")) + geom_histogram(binwidth = 1)
+```
+
+
+***
+
+<p dir="RTL">
+۳. رکورد بیشترین گردش مالی در تاریخ بورس برای چه روزی بوده است و چرا!!!
+</p>
+
+<p dir="RTL">
+در این روز بحران اقتصادی جهانی به اوج میرسد و احتمالا مردم از ترس سهام های خود را میفروشند(۱۰ اکتبر ۲۰۰۸)
+</p>
+
+
+```{r q93,message=FALSE, echo=FALSE,warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+
+files = list.files("~/Downloads/class_data/stock_dfs")
+
+n = length(files)
+
+s = files[1]
+name = strsplit(s, "\\.")
+t = paste("~/Downloads/class_data/stock_dfs/" , s, sep = "")
+x = read_csv(t)
+x %>% select(Date,Close, Open,  Volume) -> x
+
+x$Volume = as.integer(x$Volume)
+
+x %>% mutate(trade = abs(Close - Open) * Volume) %>% select(Date, trade) -> x
+
+tot = x
+
+for (i in 1:n){
+  s = files[i]
+  name = strsplit(s, "\\.")
+  t = paste("~/Downloads/class_data/stock_dfs/" , s, sep = "")
+  x = read_csv(t)
+  x %>% select(Date,Close, Open,  Volume) -> x
+  
+  x$Volume = as.integer(x$Volume)
+  
+  x %>% mutate(trade = abs(Close - Open) * Volume) %>% select(Date, trade) -> x
+  
+  tot = rbind(tot, x)
+  gc()
+}
+
+
+r = tot %>% group_by(Date) %>% summarise(total = sum(trade)) %>% arrange(-total)
+head(r, 1)$Date
+
+
+```
+
+
+***
+
+<p dir="RTL">
+۴. شاخص AAPL که نماد شرکت اپل است را در نظر بگیرید. با استفاده از رگرسیون خطی یک پیش کننده قیمت شروع (open price) بر اساس k روز قبل بسازید. بهترین انتخاب برای k چه مقداری است؟ دقت پیش بینی شما چقدر است؟
+</p>
+
+<p dir="RTL">
+بهترین پیش بینی کننده یک روز قبل است و خطا حدود ۲ درصد است.
+</p>
+
+```{r q94,message=FALSE,echo=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+
+apple = read_csv("~/Downloads/class_data/stock_dfs/AAPL.csv")
+
+n = nrow(apple)
+tn = 4 * n/5 
+testn = n - tn
+train = apple[1:tn, ]
+
+ans = list()
+for (k in 1:20){
+  
+test = apple[(tn-k + 1):(n - k),]
+valid = apple[(tn + 1):(n),]
+
+fit = lm(Open ~ High + Low + Close + Volume , data = train)
+valid$y = predict(fit, test)
+valid %>% mutate(dif = 100 * abs(y - Open)/Open) -> valid
+
+s = mean(valid$dif)
+ans[[k]] = s
+}
+ans[[1]]
+```
+
+
+***
+
+<p dir="RTL">
+۵. بر روی داده های قیمت شروع شرکت ها الگوریتم pca را اعمال کنید. نمودار تجمعی درصد واریانس بیان شده در مولفه ها را رسم کنید. سه مولفه اول چند درصد از واریانس را تبیین می کند؟
+</p>
+
+```{r q95,message=FALSE,echo=FALSE, warning=FALSE}
+library(readr)
+
+files = list.files("~/Downloads/class_data/stock_dfs")
+
+
+n = length(files)
+
+
+s = files[1]
+t = paste("~/Downloads/class_data/stock_dfs/" , s, sep = "")
+x = read_csv(t)
+x %>% select(Date, Close) -> x
+x$Close = as.numeric(x$Close)
+name = paste("n", 1, sep = "")
+colnames(x) = c("date", name)
+
+tot = x
+
+for (i in 2:n){
+  s = files[i]
+  t = paste("~/Downloads/class_data/stock_dfs/" , s, sep = "")
+  x = read_csv(t)
+  x %>% select(Date, Close) -> x
+  x$Close = as.numeric(x$Close)
+  name = paste("n", i, sep = "")
+  colnames(x) = c("date", name)
+  tot = merge(tot, x)
+}
+
+pca = prcomp(tot[,-1],center = T,  scale. = T)
+x = t((summary(pca)$importance[3,]))
+x = t(x)
+
+x = as.data.frame(x)
+
+plot(summary(pca)$importance[3,], type="l",
+     ylab="variance", xlab="number of components ")
+abline(h=0.99,col="red")
+abline(v = 32,col="red",lty=3)
+
+head(x,3)
+
+
+
+```
+
+***
+
+<p dir="RTL">
+۶. برای هر نماد اطلاعات بخش مربوطه را از داده constituents استخراج نمایید. برای هر بخش میانگین روزانه قیمت شروع شرکت های آن را محاسبه کنید. سپس با استفاده از میانگین به دست آمده  داده ایی با چند ستون که هر ستون یک بخش و هر سطر یک روز هست بسازید. داده مربوط را با داده شاخص های اقتصادی ادغام کنید. بر روی این داده pca بزنید و نمودار biplot آن را تفسیر کنید.
+</p>
+<p dir="RTL">
+داده ها در دو بعد اول تقریبا در خطهای جدا از هم قرار دارند و به خوبی جدا شده اند و همچنین تعدادی از مولفه های اولیه هستند که در یک امتدادند و میتوانند از روی هم محاسبه شوند.
+</p>
+
+```{r q96, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+
+files = list.files("~/Downloads/class_data/stock_dfs")
+industry = read_csv("~/Downloads/class_data/constituents.csv")
+n = length(files)
+
+s = files[1]
+name = strsplit(s, "\\.")
+t = paste("~/Downloads/class_data/stock_dfs/" , s, sep = "")
+x = read_csv(t)
+x %>% select(Date, Open) -> x
+
+
+x$Open = as.integer(x$Open)
+x %>% mutate(Symbol = name[[1]][1]) ->x
+
+tot = x
+
+for (i in 1:n){
+  s = files[i]
+  name = strsplit(s, "\\.")
+  t = paste("~/Downloads/class_data/stock_dfs/" , s, sep = "")
+  x = read_csv(t)
+  x %>% select(Date, Open) -> x
+  
+  x$Open = as.integer(x$Open)
+  x %>% mutate(Symbol = name[[1]][1]) ->x
+  
+  tot = rbind(tot, x)
+  gc()
+}
+
+
+ans = full_join(tot, industry)
+ans = na.omit(ans)
+
+
+ans %>% group_by(Date, Sector) %>% summarise(mid = mean(Open)) -> m
+
+inds = c("Consumer Discretionary", "Consumer Staples", "Energy", "Financials","Health Care" ,"Industrials","Information Technology" ,"Materials","Real Estate","Telecommunication Services", "Utilities"   )
+
+ind = m %>% filter(Sector == inds[[1]]) %>% select(Date, s = mid)
+colnames(ind) = c("Date", paste("s", 1, sep = ""))
+
+res = ind
+for(i in 2:11){
+  
+  ind = m %>% filter(Sector == inds[[i]]) %>% select(Date, s = mid)
+  colnames(ind) = c("Date", paste("s", i, sep = ""))
+res = merge(res, ind)
+}
+
+
+index = read_csv("~/Downloads/class_data/indexes.csv")
+
+index = merge(index, res)
+
+
+index$Date = as.numeric(index$Date)
+pca = prcomp(index,center = T,  scale. = T)
+
+biplot(pca,cex=0.8)
+
+```
+
+***
+
+<p dir="RTL">
+۷. روی همه اطلاعات (OHLCV) سهام اپل الگوریتم PCA را اعمال کنید. سپس از مولفه اول برای پیش بینی قیمت شروع سهام در روز آینده استفاده کنید. به سوالات سوال ۴ پاسخ دهید. آیا استفاده از مولفه اول نتیجه بهتری نسبت به داده open price برای پیش بینی قیمت دارد؟
+</p>
+
+<p dir="RTL">
+خیر. زیرا مولفه اول ۷۰٪ داده را پوشش میدهد و در سوال قبلی ما از کل داده استفاده کردیم.
+خطا چاپ شده است.
+</p>
+
+```{r q97,message=FALSE, echo=FALSE,warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+
+apple = read_csv("~/Downloads/class_data/stock_dfs/AAPL.csv")
+
+pca = prcomp(apple[,-1],center = T,  scale. = T)
+x = t((summary(pca)$importance[3,]))
+x = t(x)
+
+x = as.data.frame(x)
+
+
+d = pca$x
+
+n = nrow(d)
+tn = 4 * n/5 
+testn = n - tn
+train = d[1:tn, ]
+train = as.data.frame(train)
+trainopen = apple[1:tn, ]
+
+temp = cbind(trainopen$Open, train$PC1)
+colnames(temp) = c("Open", "PC1")
+
+
+res = list()
+for (k in 1:20){
+  test = d[(tn-k + 1):(n - k),]
+  test = as.data.frame(test)
+  valid = apple[(tn + 1):(n),]
+  ans = cbind(valid$Open, test$PC1)
+  colnames(ans) = c("Open", "PC1")
+  ans = as.data.frame(ans)
+  temp = as.data.frame(temp)
+  fit = lm(Open ~ PC1, data = temp)
+  ans$y = predict(fit, ans)
+  ans %>% mutate(dif = 100 * abs(y - Open)/Open) -> ans
+  
+  s = mean(ans$dif)
+  res[[k]] = s
+}
+res[[1]]
+
+
+```
+
+***
+
+<p dir="RTL">
+۸. نمودار سود نسبی شاخص s&p500 را رسم کنید. آیا توزیع سود نرمال است؟(از داده indexes استفاده کنید.)
+با استفاده از ده مولفه اول سوال پنج آیا می توانید سود و ضرر شاخص s&p500 را برای روز آينده پیش بینی کنید؟ از یک مدل رگرسیون لاجستیک استفاده کنید. درصد خطای پیش بینی را به دست آورید.
+</p>
+
+<p dir="RTL">
+طبق نمودار، خیر نرمال نیست. داده به علت تعداد کم (کمتر از فیچرها) قابل تخمین نیست.
+</p>
+```{r q98, echo=FALSE,message=FALSE, echo=FALSE,warning=FALSE}
+library(readr)
+library(quantmod)
+library(ggplot2)
+
+index = read_csv("~/Downloads/class_data/indexes.csv")
+pro = index
+pro %>% select(Date, SP500) -> pro
+
+for (i in 2:nrow(index)){
+  x = pro[i, ]
+  y = pro[i-1, ]
+  x$SP500 = x$SP500 - y$SP500
+  pro[i,] = x
+}
+
+
+ggplot(pro, aes(x = SP500)) + geom_histogram()
+
+
+
+
+
+```
+
+***
+
+<p dir="RTL"> 
+۹. عکسی که در ابتدای متن آمده را در نظر بگیرید. با استفاده از pca عکس را فشرده کنید. سپس نمودار حجم عکس فشرده بر حسب تعداد مولفه اصلی را  رسم کنید. بهترین انتخاب برای انتخاب تعداد مولفه ها در جهت فشرده سازی چه عددی است؟
+</p>
+
+<p dir="RTL"> 
+۱۰۹
+</p>
+
+```{r q99,message=FALSE,echo=FALSE, warning=FALSE}
+library(EBImage)
+library(dplyr)
+
+pic = flip(readImage("~/Desktop/stock.jpg"))
+red.weigth = .2989; green.weigth = .587; blue.weight = 0.114;
+
+img = red.weigth * imageData(pic)[,,1] + green.weigth * imageData(pic)[,,2] + blue.weight * imageData(pic)[,,3]
+image(img, col = grey(seq(0,1,length = 256)))
+
+pca.img = prcomp(img, scale = TRUE)
+
+
+x = t((summary(pca.img)$importance[3,]))
+x = t(x)
+
+x = as.data.frame(x)
+
+names <- rownames(x)
+rownames(x) <- NULL
+x <- cbind(names,x)
+colnames(x) = c("id", "var")
+x %>% filter(var >= 0.99) %>% arrange(var) %>% head(1)
+
+plot(summary(pca.img)$importance[3,], type="l",
+     ylab="variance", xlab="number of components ")
+abline(h=0.99,col="red")
+abline(v = 32,col="red",lty=3)
+
+
+
+chosen.components = 1:109
+feautre.vector = pca.img$rotation[, chosen.components]
+
+compact.data = t(feautre.vector) %*% t(img)
+approx.img = t(feautre.vector %*% compact.data)
+image(approx.img, col = grey(seq(0,1,length = 256)))
+
+```
+
+***
+
+<p dir="RTL"> 
+۱۰. پنج ایده جالبی که روی داده های مالی بالا می توانستیم پیاده کنیم را بیان کنید. (ایده کافی است نیازی به محاسبه بر روی داده نیست.)
+</p>
+
+<p dir="RTL"> 
+۱- پیدا کردن سرمداران بازار در بازه های مختلف
+
+۲- آیا ظهور یک شرکت باعث افول شرکت های دیگری شده است ؟
+
+۳- آیا شرکتی وجود دارد که سود و ضرر آن برعکس یک شرکت دیگر باشد؟
+
+۴- بهترین و بدترین روزها برای خرید  و فروش سهام
+
+۵- آیا شرکتی وجود دارد که زودتر از بقیه شرکت ها از بحران ضرر بخورد؟
+</p>

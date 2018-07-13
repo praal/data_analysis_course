@@ -1,0 +1,462 @@
+---
+title: "Sixth Week: Linear Models"
+subtitle: "House price prediction"
+author: "Parand Alizadeh"
+date: "`r Sys.time()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+---
+
+<div align="center">
+<img  src="images/house.jpg"  align = 'center'>
+</div>
+
+> <p dir="RTL"> 
+با توجه به داده های قیمت منازل
+لطفا با سوالات زیر پاسخ دهید.
+</p>
+
+
+***
+
+<p dir="RTL">
+۱. ماتریس همبستگی متغیرهای مختلف را به دست آورده و سپس رسم نمایید.
+اعداد به دست آمده را با آزمون فرض معناداری همبستگی بسنجید و سپس ده متغیری که همبستگی بالاتری با قیمت دارند را مشخص نمایید.
+</p>
+
+<p dir="RTL">
+جدول اول میزان همبستگی ها و جدول دوم p-value به دست آمده در آزمون فرض است.
+</p>
+
+```{r q61, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+
+house = read.csv("~/Downloads/house/train.csv")
+
+house = house %>% select_if(is.numeric)
+res = cor(house)
+res = round(res, 2)
+
+melted_cormat <- melt(res)
+melted_cormat = na.omit(melted_cormat)
+melted_cormat %>% filter( Var1 != "Id") -> d
+d %>% filter(Var2 != "Id") -> d
+d %>% filter(Var1 != Var2) -> d
+
+ggplot(d, aes(Var1, Var2, fill=value)) + geom_tile(aes(width=1.1, height=1.1)) + geom_text(aes(label=value), size=2) + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) 
+
+
+
+n = length(house)
+df <- data.frame(Var1 = paste("", 1:(n*n)), Var2 = "", P.value = "")
+pvalues = numeric(n * n)
+Var1 = character(n * n)
+Var2 = character(n * n)
+
+x = 1
+for (i in 1:n){
+  for (j in 1:n){
+    t = cor.test(house[,i], house[,j])
+    t = t$p.value
+    t = round(t,2)
+    Var1[x] = colnames(house)[i]
+    Var2[x] = colnames(house)[j]
+    pvalues[x] = t
+    x = x + 1
+    
+  }
+}
+df$Var1 = Var1
+df$Var2 = Var2
+df$P.value = pvalues
+
+
+ans = full_join(x = d , y = df)
+
+ans = na.omit(ans)
+ggplot(ans, aes(Var1, Var2, fill=P.value)) + geom_tile(aes(width=1.1, height=1.1)) + geom_text(aes(label=P.value), size=2) + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) 
+
+ans %>% filter(Var1 == "SalePrice") -> s
+s %>% mutate(pos = abs(value)) -> s
+s= arrange(s, -pos)
+
+fin = head(s, 10)
+fin$Var2
+```
+
+
+***
+
+<p dir="RTL">
+۲. در یک تصویر نمودار پراکنش دو به دو ده متغیر بدست آمده به همراه قیمت را رسم نمایید و هم خطی بودن متغیرها را بررسی کنید
+</p>
+
+<p dir="RTL">
+ابتدا نمودار دو به دوی متغیر ها رسم شد و برای وضوح بیشتر و بررسی هم خطی نمودار متغیر ها با قیمت رسم شد و بهترین تابع برای آن رسم شد. (از این اطلاعات میتوان برای سوال ۹ نیز استفاده کرد)
+</p>
+
+```{r q62, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(car)
+
+house = read.csv("~/Downloads/house/train.csv")
+
+house = house %>% select_if(is.numeric)
+house %>% select(SalePrice, OverallQual, GrLivArea, GarageCars, GarageArea, TotalBsmtSF, X1stFlrSF, FullBath, TotRmsAbvGrd, YearBuilt, YearRemodAdd) -> data
+scatterplotMatrix(data)
+
+ggplot(data, aes(x = OverallQual, y = SalePrice)) + geom_point()+geom_smooth(method="loess", formula=y~x, colour = "blue")
+ggplot(data, aes(x =  GrLivArea, y = SalePrice)) + geom_point()+geom_smooth(method="loess", formula=y~x, colour = "blue")
+ggplot(data, aes(x = GarageCars, y = SalePrice)) + geom_point()+geom_smooth(method="loess", formula=y~x, colour = "blue")
+ggplot(data, aes(x = GarageArea, y = SalePrice)) + geom_point()+geom_smooth(method="loess", formula=y~x, colour = "blue")
+ggplot(data, aes(x = TotalBsmtSF, y = SalePrice)) + geom_point()+geom_smooth(method="loess", formula=y~x, colour = "blue")
+ggplot(data, aes(x = X1stFlrSF, y = SalePrice)) + geom_point()+geom_smooth(method="loess", formula=y~x, colour = "blue")
+ggplot(data, aes(x = FullBath, y = SalePrice)) + geom_point()+geom_smooth(method="loess", formula=y~x, colour = "blue")
+ggplot(data, aes(x = TotRmsAbvGrd, y = SalePrice)) + geom_point()+geom_smooth(method="loess", formula=y~x, colour = "blue")
+ggplot(data, aes(x = YearBuilt, y = SalePrice)) + geom_point()+geom_smooth(method="loess", formula=y~x, colour = "blue")
+ggplot(data, aes(x = YearRemodAdd, y = SalePrice)) + geom_point()+geom_smooth(method="loess", formula=y~x, colour = "blue")
+
+
+```
+
+***
+
+<p dir="RTL">
+۳. یک مدل خطی بر اساس ده متغیر برای پیش بینی قیمت برازش دهید. و سپس خلاصه نتایج مدل را به دست آورید.
+</p>
+
+```{r q63, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(car)
+
+house = read.csv("~/Downloads/house/train.csv")
+
+house = house %>% select_if(is.numeric)
+house %>% select(SalePrice, OverallQual, GrLivArea, GarageCars, GarageArea, TotalBsmtSF, X1stFlrSF, FullBath, TotRmsAbvGrd, YearBuilt, YearRemodAdd) -> data
+
+fit = lm(SalePrice ~ OverallQual + GrLivArea + GarageCars + GarageArea + TotalBsmtSF + X1stFlrSF+ FullBath + TotRmsAbvGrd + YearBuilt + YearRemodAdd , data = data)
+summary(fit)
+```
+
+***
+
+<p dir="RTL">
+۴. نمودار قیمت واقعی و قیمت پیش بینی را رسم نمایید و خوب بودن مدل را ارزیابی کنید.
+</p>
+
+<p dir="RTL">
+نمودار قیمت بر اساس شناسه خانه ها در زیر آمده. نقاط قرمز تخمین ما و نقاط آبی قیمت واقعی هستند.
+</p>
+
+```{r q64, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(car)
+
+house = read.csv("~/Downloads/house/train.csv")
+
+
+house = house %>% select_if(is.numeric)
+house %>% select(Id,SalePrice, OverallQual, GrLivArea, GarageCars, GarageArea, TotalBsmtSF, X1stFlrSF, FullBath, TotRmsAbvGrd, YearBuilt, YearRemodAdd) -> data
+
+fit = lm(SalePrice ~ OverallQual + GrLivArea + GarageCars + GarageArea + TotalBsmtSF  + X1stFlrSF+ FullBath + TotRmsAbvGrd+ YearBuilt + YearRemodAdd , data = data)
+
+
+w = predict(fit, data[3:12])
+data$resi = fit$residuals
+data$predict = w
+data %>% mutate(dif = resi*resi) -> data
+data %>% summarise(RSE = sqrt(mean((sum(dif))))) -> ss
+
+
+
+ggplot() +
+  # blue plot
+  geom_point(data=data, aes(x=Id, y=SalePrice, color = "blue")) + 
+
+  # red plot
+  geom_point(data=data, aes(x=Id, y=predict, color = "red")) 
+
+summary(fit)
+ss
+```
+
+***
+
+<p dir="RTL">
+۵. مقدار
+R-squared
+ مدل را به دست آورید. آیا بر اساس این کمیت مدل به خوبی به داده ها برازش داده شده است؟
+ کمیت
+ F-statistic
+ را در خلاصه مدل تفسیر نمایید.
+</p>
+
+<p dir="RTL">
+R-squared 
+
+میزان فیت شدن مدل روی مقادیر اصلی را نشان میدهد. و همیشه بین ۰ و ۱ است. 
+بنابراین هرچه بیشتر باشد فیت شدن بیشتری را نشان میدهد.  همچنین با بیشتر کردن ویژگی های دخیل در مدل نیز این مقدار افزایش میابد. بنابراین از adjusted R Squared استفاده میکنند که این مشکل را حل کند. 
+در اینجا چون این عدد تقریبا زیاد است مدل نسبتا خوب فیت شده است.
+
+F statistic
+
+این مقدار بیان میکند که بین مدل و مقدار مورد نظر آیا رابطه ای برقرار است یا خیر.
+هرچه این مقدار بزرگتر از ۱ باشد بهتر است. اینجا چون این عدد بسیار بزرگ است به راحتی فرض ۰ که رندوم بودن این رابطه است نقض شده و رابطه بین ویژگی و جواب وجود دارد.
+
+</p>
+
+```{r q65, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(car)
+
+house = read.csv("~/Downloads/house/train.csv")
+
+
+house = house %>% select_if(is.numeric)
+house %>% select(SalePrice, OverallQual, GrLivArea, GarageCars, GarageArea, TotalBsmtSF, X1stFlrSF, FullBath, TotRmsAbvGrd, YearBuilt, YearRemodAdd) -> data
+
+fit = lm(SalePrice ~ OverallQual + GrLivArea + GarageCars + GarageArea + TotalBsmtSF  + X1stFlrSF+ FullBath + TotRmsAbvGrd+ YearBuilt + YearRemodAdd , data = data)
+
+summ = summary(fit)
+
+print("R Squared")
+summ$r.squared
+print("adjusted R Squared")
+summ$adj.r.squared
+
+print("F Statistic")
+summ$fstatistic
+```
+
+***
+
+<p dir="RTL">
+۶. بر اساس
+p-value
+ سطح معناداری ضرایب تصمیم بگیرید که چه متغیرهایی در مدل سازی استفاده شود.
+بر اساس متغیرهای جدید دوباره مدل سازی کنید و نتایج رو گزارش دهید.
+</p>
+
+<p dir="RTL">
+متغیر هایی که سطح معناداری کمی داشتند با متغیر های بعدی با کورلیشن بالا عوض شدند و این کار تا جایی ادامه یافت که همه متغیر ها معنی دار باشند:
+
+</p>
+
+```{r q66, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(car)
+
+house = read.csv("~/Downloads/house/train.csv")
+
+
+
+house = house %>% select_if(is.numeric)
+house %>% select(SalePrice, OverallQual, GrLivArea, GarageCars, BsmtFinSF1, TotalBsmtSF, X1stFlrSF, WoodDeckSF, OverallCond, YearBuilt, YearRemodAdd) -> data
+
+fit = lm(SalePrice ~ OverallQual + GrLivArea + GarageCars + BsmtFinSF1 + TotalBsmtSF  + X1stFlrSF+ WoodDeckSF + OverallCond+ YearBuilt + YearRemodAdd , data = data)
+summary(fit)
+
+data$resi = fit$residuals
+data %>% mutate(dif = (resi)*(resi)) -> data
+data %>% summarise(RSE = sqrt(mean((sum(dif))))) -> ss
+
+ss
+```
+***
+
+<p dir="RTL">
+۷. مدل خود را بر اساس باقی مانده نقص یابی کنید.
+سه محک 
+normality, independance, Constant Variance
+ را در نقص یابی خود در نظر بگیرید.
+</p>
+
+<p dir="RTL">
+فرض : Constant Variance یا Homoscedasticity of residuals
+
+در ۴ نمودار اول نمودار های سمت چپ برای بررسی این قضیه هستند.  اگر این فرض برقرار باشد این دو نمودار باید تقریبا خط صاف باشد اما در اینجا با افزایش متغیرهای تاثیر گذار نمودار هم تغییر میکند. که در نمودار استاندارد شده این بیشتر واضح است. بنابراین فرض برقرار نیست.
+
+فرض : independance یا No autocorrelation of residuals
+
+در دو نمودار پایین، نمودار سمت چپ  در این رابطه است. خط سمت چپ نشان دهنده کورلیشن باقیمانده با خودش است که یک است. اگر باقیمانده ها مستقل باشند خطوط بعدی نزدیک صفر خواهند بود که اینجا هستند. پس احتمالا باقیمانده ها مستقل هستند. حال با یک تست فرض رندوم بودن دوباره همین را امتحان میکنیم. که چون فرض ۰ که رندوم بودن است رد نمیشود با اطمینان خاطر بیشتری میتوان گفت که باقیمانده ها مستقل اند.
+
+فرض : normality
+
+در ۴ نمودار زیر نمودار سمت راست بالا این قضیه را بررسی میکند. اگر نرمال باشند نقاط باید در یک خط قرار بگیرند در حالی که این طور نیست. پس نرمال هم نیست. 
+
+</p>
+
+```{r q67, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(randtests)
+library(car)
+
+house = read.csv("~/Downloads/house/train.csv")
+
+
+
+house = house %>% select_if(is.numeric)
+house %>% select(SalePrice, OverallQual, GrLivArea, GarageCars, BsmtFinSF1, TotalBsmtSF, X1stFlrSF, WoodDeckSF, OverallCond, YearBuilt, YearRemodAdd) -> data
+
+fit = lm(SalePrice ~ OverallQual + GrLivArea + GarageCars + BsmtFinSF1 + TotalBsmtSF  + X1stFlrSF+ WoodDeckSF + OverallCond+ YearBuilt + YearRemodAdd , data = data)
+
+#variance
+par(mfrow=c(2,2)) 
+plot(fit)
+
+
+#auto correlation
+print("independence:")
+acf(fit$residuals) 
+runs.test(fit$residuals)
+
+```
+
+***
+
+<p dir="RTL">
+۸. داده ها را به پنج قسمت تقسیم کنید. بر اساس چهار قسمت مدل خطی را بسازید و صحت مدل را برای یک قسمت 
+باقی مانده را تست کنید. خطای پیش بینی شما چقدر است؟
+</p>
+
+```{r q68, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(car)
+
+house = read.csv("~/Downloads/house/train.csv")
+
+house = house %>% select_if(is.numeric)
+house %>% select(Id, SalePrice, OverallQual, GrLivArea, GarageCars, BsmtFinSF1, TotalBsmtSF, X1stFlrSF, WoodDeckSF, OverallCond, YearBuilt, YearRemodAdd) -> data
+
+
+random = data[sample(nrow(data)),]
+
+
+n = nrow(data)
+trainnum = as.integer(4 * n / 5)
+testnum = n - trainnum
+train = head(random, trainnum)
+test= tail(random, testnum)
+
+
+fit = lm(SalePrice ~ OverallQual + GrLivArea + GarageCars + BsmtFinSF1 + TotalBsmtSF  + X1stFlrSF+ WoodDeckSF + OverallCond+ YearBuilt + YearRemodAdd , data = train)
+wtest = predict(fit, test[3:12])
+
+test$predict = wtest
+test %>% mutate(dif = (predict - SalePrice)*(predict - SalePrice)) -> test
+test %>% summarise(error = sqrt(sum(dif)/testnum)) -> ss
+ss
+```
+
+***
+
+<p dir="RTL"> 
+۹. آیا قیمت ربط غیر خطی با یکی از ده متغیر استفاده شده دارد؟
+بر اساس دستاوردهای خود مدل را بهتر نمایید.
+</p>
+
+<p dir="RTL"> 
+توان ۲ و توان ۳ متغیر ها اضافه شد و متغیر هایی که سطح معناداری کمی داشتند حذف شدند. 
+</p>
+
+```{r q69, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+
+house = read.csv("~/Downloads/house/train.csv")
+
+house = house %>% select_if(is.numeric)
+house %>% select(Id, SalePrice, OverallQual, GrLivArea, GarageCars, BsmtFinSF1, TotalBsmtSF, X1stFlrSF, WoodDeckSF, OverallCond, YearBuilt, YearRemodAdd) -> data
+
+random = data[sample(nrow(data)),]
+
+
+n = nrow(data)
+trainnum = as.integer(4 * n / 5)
+testnum = n - trainnum
+train = head(random, trainnum)
+test= tail(random, testnum)
+
+
+fit = lm(SalePrice ~  poly(OverallQual,3) + poly(GrLivArea,3) + poly(GarageCars,3) + poly(BsmtFinSF1,3) + poly(TotalBsmtSF,3)  + poly(X1stFlrSF,3)+ poly(WoodDeckSF,3) + poly(OverallCond,3)+ poly(YearBuilt,3) + poly(YearRemodAdd,3)  , data = train)
+summary(fit)
+
+wtest = predict(fit, test[3:12])
+
+test$predict = wtest
+test %>% mutate(dif = (predict - SalePrice)*(predict - SalePrice)) -> test
+test %>% summarise(sum = sqrt(sum(dif)/testnum)) -> ss
+ss
+```
+***
+
+<p dir="RTL"> 
+۱۰. بر اساس مدل نهایی به دست آمده نتایج پیش بینی خود را بر روی
+test.csv
+به دست آورید و در سایت 
+kaggle
+ در مسابقه 
+ House Prices: Advanced Regression Techniques
+بارگذاری نمایید. سپس لینک رتبه و عدد آن را ضمیمه تمرین کنید.
+</p>
+
+```{r q10, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(car)
+
+house = read.csv("~/Downloads/house/train.csv")
+
+house = house %>% select_if(is.numeric)
+house %>% select(SalePrice, OverallQual, GrLivArea, GarageCars, BsmtFinSF1, TotalBsmtSF, X1stFlrSF, WoodDeckSF, OverallCond, YearBuilt, YearRemodAdd) -> train
+
+fit = lm(SalePrice ~  poly(OverallQual,3) + poly(GrLivArea,3) + GarageCars + poly(BsmtFinSF1,2) + TotalBsmtSF  + poly(X1stFlrSF,3)+ WoodDeckSF + OverallCond+ poly(YearBuilt,3) + poly(YearRemodAdd,2)  , data = train)
+summary(fit)
+
+test = read.csv("~/Downloads/house/test.csv")
+test %>% select(Id, OverallQual, GrLivArea, GarageCars, BsmtFinSF1, TotalBsmtSF, X1stFlrSF, WoodDeckSF, OverallCond, YearBuilt, YearRemodAdd) -> td
+
+td[is.na(td)] <- 0
+w = predict(fit , td[2:11])
+td$SalePrice = w
+
+
+td %>% select(Id, SalePrice) -> fina
+
+write.csv(fina, file = "~/Desktop/foo.csv", row.names = FALSE)
+
+```
+
+
+<div id="bg">
+  <img src="./images/img.png" alt="">
+</div>  
