@@ -20,7 +20,7 @@ for (i in (1:n)){
 }
 
 write_csv(genres, "~/Desktop/Data Analysis/genres.csv")
-
+View(genres)
 genres %>% group_by(j) %>% summarise(count = n()) -> cnt
 
 cnt = cnt[1:19,]

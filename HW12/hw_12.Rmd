@@ -1,0 +1,487 @@
+---
+title: "Association rules"
+subtitle: "Movie recommender systems"
+author: "Parand Alizadeh"
+date: "`r Sys.time()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+---
+
+<div align="center">
+<img  src="./images/rs_cover.jpg"  align = 'center'>
+</div>
+
+> <p dir="RTL"> 
+با استفاده از داده نظرهای فیلم به سوالات زیر پاسخ دهید.
+</p>
+
+***
+
+<p dir="RTL">
+۱. آماره های زیر را بیابید.
+الف. محبوب ترین فیلم کدام است؟
+ب. بیشترین نظرات درباره چه فیلمی داده شده است؟
+پ. منفورترین فیلم کدام است؟
+ت. تعداد فیلم های ساخته شده در هر سال
+ث. در هر سالی مردم به چه ژانری علاقه مند بوده اند.
+</p>
+
+<p dir="RTL">
+قسمت الف
+</p>
+```{r q12a, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+movie = read_delim("~/Downloads/ml-10m/ml-10M100K/movies.dat", delim = "$")
+rate = read_delim("~/Downloads/ml-10m/ml-10M100K/ratings.dat", delim = "::")
+
+rate = rate %>% select(USER, FILM, RATE)
+
+
+rate %>% group_by(FILM) %>% summarise(tot = mean(RATE)) -> avg
+
+film = movie %>% select(FILM = ID, Name)
+avg = full_join(avg, film)
+avg = na.omit(avg)
+avg = avg[order(-avg$tot),]
+
+
+print(avg$Name[1:10])
+```
+
+<p dir="RTL">
+قسمت ب
+</p>
+```{r q12b, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+movie = read_delim("~/Downloads/ml-10m/ml-10M100K/movies.dat", delim = "$")
+rate = read_delim("~/Downloads/ml-10m/ml-10M100K/ratings.dat", delim = "::")
+
+rate = rate %>% select(USER, FILM, RATE)
+
+
+rate %>% group_by(FILM) %>% summarise(tot = n()) -> avg
+
+film = movie %>% select(FILM = ID, Name)
+avg = full_join(avg, film)
+avg = na.omit(avg)
+avg = avg[order(-avg$tot),]
+
+print(avg$Name[1:10])
+``` 
+
+<p dir="RTL">
+قسمت پ
+</p>
+```{r q12c, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+movie = read_delim("~/Downloads/ml-10m/ml-10M100K/movies.dat", delim = "$")
+rate = read_delim("~/Downloads/ml-10m/ml-10M100K/ratings.dat", delim = "::")
+
+rate = rate %>% select(USER, FILM, RATE)
+
+
+rate %>% group_by(FILM) %>% summarise(tot = mean(RATE)) -> avg
+
+film = movie %>% select(FILM = ID, Name)
+avg = full_join(avg, film)
+avg = na.omit(avg)
+avg = avg[order(avg$tot),]
+
+
+print(avg$Name[10:1])
+```
+
+<p dir="RTL">
+قسمت ت
+</p>
+```{r q12d, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(tm)
+library(wordcloud)
+library(stringr)
+library(tidytext)
+movie = read_delim("~/Downloads/ml-10m/ml-10M100K/movies.dat", delim = "$")
+
+movie %>% mutate(year = str_sub(Name,-5,-2)) %>% filter(year > 1900) %>% filter(year < 2020)-> movie
+
+
+movie %>% group_by(year) %>% summarise(count = n()) -> yearcnt
+
+yearcnt = yearcnt[order(-yearcnt$count),]
+
+ggplot(head(yearcnt,20), aes(x = year, y = count)) + geom_col(fill = "purple") + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) 
+
+```
+
+<p dir="RTL">
+قسمت ث
+</p>
+```{r q12e, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+movie = read_delim("~/Downloads/ml-10m/ml-10M100K/movies.dat", delim = "$")
+rate = read_delim("~/Downloads/ml-10m/ml-10M100K/ratings.dat", delim = "::")
+rate = rate %>% select(FILM, RATE, TIME)
+
+n = nrow(movie)
+genres = NULL
+
+genres = read_csv("~/Desktop/Data Analysis/genres.csv")
+
+rate$year = format(as.POSIXct(rate$TIME, origin = "1970-01-01"), "%Y")
+
+rate %>% select(id = FILM, rate = RATE, year) -> rate
+colnames(genres) = c("id", "name", "genre")
+genrate = full_join(rate, genres)
+
+genrate %>% group_by(year, genre) %>% summarise(avg = mean(rate, na.rm = TRUE)) -> yeargenre
+
+yeargenre %>% group_by(year) %>% filter(avg == max(avg)) %>% select(year, genre)-> t
+
+t
+```
+
+***
+
+<p dir="RTL">
+۲. ژانر فیلم ها را استخراج نمایید.  سپس آماره های زیر را استخراج نمایید.
+الف. نمودار ستونی تعداد فیلم های هر ژانر
+ب. نمودار همبستگی ژانرها
+پ. متوسط امتیاز به هر ژانر
+ت. دوران طلایی فیلم سازی 
+</p>
+
+<p dir="RTL">
+قسمت الف
+</p>
+```{r q122a, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+movie = read_delim("~/Downloads/ml-10m/ml-10M100K/movies.dat", delim = "$")
+rate = read_delim("~/Downloads/ml-10m/ml-10M100K/ratings.dat", delim = "::")
+
+rate = rate %>% select(USER, FILM, RATE)
+
+n = nrow(movie)
+genres = NULL
+
+for (i in (1:n)){
+  x = movie[i, ]
+  g = x$Genres
+  q = strsplit(g, '=')
+  for(j in q[[1]]){
+    genres = rbind(genres, data.frame(x$ID, x$Name, j))
+  }
+}
+
+write_csv(genres, "~/Desktop/Data Analysis/genres.csv")
+
+genres %>% group_by(j) %>% summarise(count = n()) -> cnt
+
+cnt = cnt[1:19,]
+
+ggplot(cnt, aes(x = j, y = count)) + geom_col(fill = "purple") + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) 
+
+```
+
+<p dir="RTL">
+قسمت  ب
+</p>
+```{r q122b, echo=FALSE,message=FALSE, warning=FALSE}
+library(stringr)
+library(dplyr)
+library(ggplot2)
+movie = read_delim("~/Downloads/ml-10m/ml-10M100K/movies.dat", delim = "$")
+rate = read_delim("~/Downloads/ml-10m/ml-10M100K/ratings.dat", delim = "::")
+
+rate = rate %>% select(USER, FILM, RATE)
+
+n = nrow(movie)
+genres = NULL
+
+      
+
+genrtale = data.frame(matrix(ncol= 19, nrow = 0))
+gn= c("Adventure","Animation", "Children","Comedy","Fantasy", "Romance", "Drama", "Action", "Crime","Thriller", "Horror","Mystery",                                                    
+                       "Sci-Fi",                                                     
+                      "IMAX",                                                       
+                      "Documentary",                                                
+                      "War",                                                       
+                       "Musical",                                                    
+                      "Film-Noir",                                                  
+                      "Western")
+colnames(genrtale) = gn
+
+for (i in (1:n)){
+  x = movie[i, ]
+  g = x$Genres
+  q = strsplit(g, '=')
+  h = rep(0, 19)
+
+  for(j in q[[1]]){
+    for (u in 1:(19)){
+      if(gn[u] == j){
+        h[u] = 1
+      }
+    }
+  }
+
+  
+  genrtale[i, ] = h
+  
+}
+pairs(genrtale[,1:5])
+
+```
+<p dir="RTL">
+قسمت پ
+</p>
+```{r q122c, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+movie = read_delim("~/Downloads/ml-10m/ml-10M100K/movies.dat", delim = "$")
+rate = read_delim("~/Downloads/ml-10m/ml-10M100K/ratings.dat", delim = "::")
+rate = rate %>% select(FILM, RATE, TIME)
+
+n = nrow(movie)
+genres = NULL
+
+for (i in (1:n)){
+  x = movie[i, ]
+  g = x$Genres
+  q = strsplit(g, '=')
+  for(j in q[[1]]){
+    genres = rbind(genres, data.frame(x$ID, j))
+  }
+}
+
+rate$year = format(as.POSIXct(rate$TIME, origin = "1970-01-01"), "%Y")
+
+rate %>% select(id = FILM, rate = RATE, year) -> rate
+colnames(genres) = c("id", "genre")
+genrate = full_join(rate, genres)
+
+genrate %>% group_by(genre) %>% summarise(avg = mean(rate, na.rm = TRUE))  -> genavg
+genavg = genavg[1:19,]
+ggplot(genavg, aes(x = genre, y = avg)) + geom_col(fill = "purple") + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) 
+
+```
+<p dir="RTL">
+قسمت ت
+</p>
+```{r q122d, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(tm)
+library(wordcloud)
+library(stringr)
+library(tidytext)
+movie = read_delim("~/Downloads/ml-10m/ml-10M100K/movies.dat", delim = "$")
+
+movie %>% mutate(year = str_sub(Name,-5,-2)) %>% filter(year > 1900) %>% filter(year < 2020)-> movie
+
+
+genres = read_csv("~/Desktop/Data Analysis/genres.csv")
+colnames(genres) = c("ID", "Name", "Genre")
+
+rate = read_delim("~/Downloads/ml-10m/ml-10M100K/ratings.dat", delim = "::")
+
+rate = rate %>% select(USER, FILM, RATE)
+movrate = rate %>% group_by(FILM) %>% summarise(avg = mean(RATE, na.rm = TRUE))
+movrate %>% filter(avg >= 4) -> movrate
+
+movie %>% filter(ID %in% movrate$FILM) -> selected
+
+selected %>% group_by(year) %>% summarise(cnt = n()) -> golden
+golden = golden[order(-golden$cnt), ]
+ggplot(head(golden, 20), aes(x = year, y = cnt)) + geom_col(fill = "purple") + theme(axis.text.x = element_text(angle=-90, vjust=0.5)) 
+
+```
+***
+
+<p dir="RTL">
+۳. نمودار ابر لغات را بر حسب کلمات عنوان فیلم ها رسم نمایید.
+</p>
+
+```{r q123, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(tm)
+library(wordcloud)
+library(stringr)
+library(tidytext)
+movie = read_delim("~/Downloads/ml-10m/ml-10M100K/movies.dat", delim = "$")
+mname = movie %>% select(Name)
+
+words = (mname) %>% 
+  str_replace_all("[[:punct:]]"," ") %>%
+  str_replace_all("[[:digit:]]","") %>% 
+  str_to_lower() %>% 
+  str_split(pattern = "\\s") %>% 
+  unlist() %>% 
+  table() %>% 
+  as.data.frame(stringsAsFactors = F)
+
+colnames(words) = c("word","count")
+words = words[-(1:250),]
+
+words = words  %>% 
+  filter(!(word %in% stop_words$word)) %>% 
+  filter(nchar(word)>1)
+
+
+words = words[order(-words$count),]
+wordcloud(words$word[1:20], words$count[1:20], c(2,.2), random.order = FALSE, colors = brewer.pal(8, "Dark2"))
+
+```
+
+***
+
+<p dir="RTL">
+۴. با استفاده از قوانین همبستگی یک توصیه گر برای فیلم ها بسازید. شبیه ترین فیلم ها به لیست زیر را پیدا کنید.
+</p>
+
+* Castle in the Sky (1986)
+* Cast Away (2000)
+* No Country for Old Men (2007)
+* Memento (2000)
+
+
+```{r q124, echo=FALSE,message=FALSE, warning=FALSE}
+library(readr)
+library(arules)
+library(arulesViz)
+library(colorspace)
+library(dplyr)
+
+rate = read_delim("~/Downloads/ml-10m/ml-10M100K/ratings.dat", delim = "::")
+movie = read_delim("~/Downloads/ml-10m/ml-10M100K/movies.dat",  delim="$")
+
+rate = rate %>% select(USER, ID = FILM, RATE) %>% filter(RATE >= 3)
+
+trans <- rate %>% inner_join(movie) %>% group_by(USER) %>% summarise(names= list(c(Name)))
+
+trans <- as(trans$names, "transactions")
+
+allrules <- apriori(trans, parameter = list(support = 0.001,confidence = 0.25, minlen = 2), appearance = list(lhs=c("Castle in the Sky (Tenkû no shiro Rapyuta) (1986)", 
+                                                                                                                   "No Country for Old Men (2007)",
+                                                                                                                   "Cast Away (2000)",
+                                                                                                                   "Memento (2000)")))
+
+
+
+rules_info <-
+  data.frame(
+    LHS = labels(lhs(allrules)), 
+    RHS = labels(rhs(allrules)),          
+    quality(allrules)
+  )
+alls = rules_info[5485:5584,]
+alls = alls[order(-alls$lift),]
+head(alls, 10)$RHS
+
+```
+
+***
+
+<p dir="RTL">
+۵. تمرین سخت: در گیت هاب برای خود اکانت درست کنید. همه تمرین های خود را آنجا بارگذاری کنید! و لینک آن را ارسال نمایید.
+</p>
+
+https://github.com/praal/data_analysis_course
+
+
+***
+
+<p dir="RTL">
+۶. پنج انتقاد از درس و نحوه تدریس را بیان کنید.
+
+شاید بهتر بود از نظر علمی و آماری دقیق تر مباحث را بررسی کنیم.
+
+تمرینهای تئوری ریاضی باعث بهبود یادگیری میشد.
+
+تمرین ها با اینکه جالب بودند اما شاید حجم زیادی از آنها تکراری میشد و جنبه آموزشی نداشت و در تمرینهای قبلی مشابه آنها انجام شده بود.
+
+حجم و تعداد تمرین ها زیاد بود.
+
+امتحان درس شاید خیلی مشابه کاری که در طول ترم انجام دادیم نبود.
+
+</p>
+***
+
+<p dir="RTL">
+۷. پنج پیشنهاد برای بهتر شدن درس بیان کنید.
+
+مباحث ریاضی بیشتری پوشش داده شود.
+
+تئوری عمیق تر بررسی شود.
+
+امتحان عملی.
+
+مباحث مربوط به ماشین لرنینگ بیشتری پوشش داده شود.
+
+مثال های واقعی از تحلیل داده و نتیجه گیری بر اساس آن آورده شود.
+
+</p>
+
+***
+
+<p dir="RTL">
+۸. سه موضوع آماری جدید برای جایگزینی در سرفصل ها پیشنهاد دهید.
+
+
+تخمین - سپملینگ - دادههای کتگوریکال و تکنیکهای مربوط به آنها
+
+</p>
+***
+
+<p dir="RTL"> 
+۹. سه داده جالب برای کار در کلاس پیشنهاد دهید.
+
+
+داده های شبکههای اجتماعی که در سایت استنفورد موجود است.
+
+http://snap.stanford.edu
+
+داده تاکسیهای نیویورک و مسیریابی 
+
+داده های سایت های مثل استک اور فلو
+
+</p>
+
+***
+
+<p dir="RTL"> 
+۱۰. چهار نکته مهمی که در کلاس یاد گرفتید را بیان کنید.
+
+
+آشنا شدن و فهمیدن داده از دانستن تکنیک ها مهم تر است
+
+تصویر سازی داده قبل از اعمال هر تکنیکی به تحلیل بهتر کمک میکند.
+
+با تست های فرض و تئوریهای پشت آنها آشنا شدم.
+
+تحلیل داده ها میتواند گمراه کننده باشد و میتوان آن را طوری استفاده کرد که به نفع موضوعی که میخواهیم باشد. 
+
+</p>
