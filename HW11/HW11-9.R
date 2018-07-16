@@ -1,40 +1,40 @@
 library(readr)
 
-x = read_csv("~/Downloads/week_11/week_11/data/worldwide.csv")
+#x = read_csv("~/Downloads/week_11/week_11/data/worldwide.csv")
 
-x %>% select(mag, time, place) -> x
-x %>% mutate(country = "", year = 0) -> x
+#x %>% select(mag, time, place) -> x
+#x %>% mutate(country = "", year = 0) -> x
 
-for (i in 1:nrow(x)){
-  t = x[i,]
-  s = t$place
-  s = strsplit(s, ",\\s")
-  s = s[[length(s)]]
-  s = s[[length(s)]]
-  t$country = s
-  x[i,] = t
+#for (i in 1:nrow(x)){
+#  t = x[i,]
+#  s = t$place
+#  s = strsplit(s, ",\\s")
+#  s = s[[length(s)]]
+#  s = s[[length(s)]]
+#  t$country = s
+#  x[i,] = t
   
-  t = x[i,]
-  s = t$time
-  s = substring(s, 1, 4)
-  t$year = s
+#  t = x[i,]
+#  s = t$time
+#  s = substring(s, 1, 4)
+#  t$year = s
   
-  x[i,] = t
+#  x[i,] = t
   
   
   
-}
+#}
 
-View(x)
-x %>% select(mag, year, country) -> x 
-x %>% group_by(year,country) %>% summarise(average = mean(mag)) -> ave
-View(ave)
+#x %>% select(mag, year, country) -> x 
+#x %>% group_by(year,country) %>% summarise(average = mean(mag)) -> ave
+#View(ave)
+#write_csv(ave, "~/Desktop/Data Analysis/conavge.csv")
+ave = read_csv("~/Desktop/Data Analysis/conavge.csv")
 
 countries = unique(ave$country)
-View(countries)
 
 p = list()
-for (i in 1:length(countries)){
+for (i in 1:(length(countries))){
   t = countries[i]
   
   ave %>% filter(country == t) -> s
@@ -48,4 +48,3 @@ for (i in 1:length(countries)){
   if(p[[i]] < 0.1)
     print(t)
 }
-
